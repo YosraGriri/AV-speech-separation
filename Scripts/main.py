@@ -21,7 +21,7 @@ rt60 = 0.3  # seconds
 e_absorption, max_order = pra.inverse_sabine(rt60, room_dimensions)
 materials = pra.Material(e_absorption)
 print(e_absorption, max_order)
-max_order = 10
+max_order = max_order
 print('-----------------------------------------------------------------------------')
 
 # specify signal source
