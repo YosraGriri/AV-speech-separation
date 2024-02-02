@@ -1,11 +1,35 @@
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy.io import wavfile
-from scipy.signal import fftconvolve
-import IPython
 import pyroomacoustics as pra
-import math
+import numpy as np
 
+
+def add_circular_array(
+        room,
+        mic_center,
+        mic_radius,
+        mic_n):
+    """
+    Adds a 3D circular microphone array to the specified room.
+
+    Parameters:
+    - room: pyroomacoustics Room object.
+    - mic_center: 3D numpy array or similar, representing the center of the microphone array.
+    - mic_radius: Radius of the circular microphone array.
+    - mic_n: Number of microphones in the array.
+    - sampling_frequency: Sampling frequency for the microphone array.
+    """
+
+    # Create the 2D circular points in the xy-plane
+    mic_dim = pra.circular_2D_array(mic_center[:2], mic_n, 0, mic_radius)
+    # Add the z-coordinate to create a 3D array
+    mic_dim = np.concatenate((mic_dim, np.ones((1, mic_n)) * mic_center[2]), axis=0)
+    # Print the exact coordinates of each microphone
+
+    print('Microphone Array Coordinates:')
+    for i in range(mic_n):
+        print(f'Microphone {i + 1}: {mic_dim[0, i]:.2f}, {mic_dim[1, i]:.2f}, {mic_dim[2, i]:.2f}')
+    # Create the MicrophoneArray object and add it to the room
+    array = pra.MicrophoneArray(mic_dim, room.fs)
+    room.add_microphone_array(array)
 
 def add_microphone_array(
         room,
@@ -34,7 +58,6 @@ def add_sound_source(
     """
 
     room.add_source(source_location, signal)
-
 
 
 def create_room(fs,
