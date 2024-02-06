@@ -1,5 +1,6 @@
 # Import necessary libraries
-from simulate_room import create_room, add_microphone_array, add_sound_source, add_circular_array
+from simulate_room import (create_room, add_microphone_array, add_sound_source,
+                           add_circular_array)
 from generate_RIR import generate_rir, plot_waveform, save_processed_audio
 from plot import plot_room
 import math
@@ -87,17 +88,6 @@ for subfolder in os.listdir(source_directory):
                                         n_rays=n_rays,
                                         energy_thres=energy_thres)
 
-                # Microphone array positions
-                #mic_array = np.array([
-                   #[center_x + glasses_width / 2, center_y + glasses_width / 2, person_height],
-                   # [center_x + glasses_width / 2, center_y - glasses_width / 2, person_height],
-                  #  [center_x - glasses_width / 2, center_y + glasses_width / 2, person_height],
-                 #   [center_x - glasses_width / 2, center_y - glasses_width / 2, person_height]
-                #])
-                #print(mic_array.shape)
-
-                # Add microphone array to the room
-                #add_microphone_array(shoebox, mic_array)
                 # Example usage of the function
                 add_circular_array(shoebox,
                                    mic_center=np.array([0, 0, 1.7]),

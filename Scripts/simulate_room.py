@@ -6,7 +6,7 @@ def add_circular_array(
         room,
         mic_center,
         mic_radius,
-        mic_n):
+        mic_n=4):
     """
     Adds a 3D circular microphone array to the specified room.
 
@@ -30,6 +30,8 @@ def add_circular_array(
     # Create the MicrophoneArray object and add it to the room
     array = pra.MicrophoneArray(mic_dim, room.fs)
     room.add_microphone_array(array)
+    return mic_dim
+
 
 def add_microphone_array(
         room,
