@@ -1,7 +1,6 @@
 from generate_sample import *
 import multiprocessing.dummy as mp
 
-
 def main():
     parser = argparse.ArgumentParser(description='Generate room acoustics samples.')
     parser.add_argument('--output_path', type=str,
@@ -12,7 +11,7 @@ def main():
                         help='path containing sources', required=True)
     parser.add_argument('--duration', type=float, default=5.0,
                         help='Duration of the generated samples in seconds')
-    parser.add_argument('--sr', type=int, default=44100,
+    parser.add_argument('--sr', type=int, default=16000,
                         help='Sampling rate of the generated samples')
     parser.add_argument('--n_sources', type=int, default=2,
                         help='Number of sound sources in the room')

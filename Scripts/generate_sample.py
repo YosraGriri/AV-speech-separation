@@ -5,6 +5,8 @@ from simulate_room import *
 from plot import *
 from get_voice import get_voices
 import json
+import shutil
+
 # Mean and STD of the signal peak
 FG_VOL_MIN = 0.15
 FG_VOL_MAX = 0.4
@@ -12,7 +14,7 @@ BG_VOL_MIN = 0.2
 BG_VOL_MAX = 0.5
 
 
-def generate_sample(args: argparse.Namespace, idx: int) -> int:
+def generate_sample(args: argparse.Namespace, idx: int) -> str:
     """
     Generate a single sample with simulated room acoustics.
 
@@ -40,9 +42,10 @@ def generate_sample(args: argparse.Namespace, idx: int) -> int:
 
     # [1] Load voice signals
     global room, mic_dim, fg_target
+
     output_prefix_dir = os.path.join(args.source_dir, '{:05d}'.format(idx))
     Path(output_prefix_dir).mkdir(parents=True, exist_ok=True)
-    voices_data = get_voices(args)
+    voices_data, video_paths = get_voices(args)
     print(f'the length of voices_data is{len(voices_data)}')
 
     # [3] Sample background with the same length as voice signals
@@ -157,4 +160,8 @@ def generate_sample(args: argparse.Namespace, idx: int) -> int:
               zlim=args.room_dimensions[2],
               save_path=args.output_path)
     print('room is saved')
-    return 0
+
+    # Copy video files to the output directory
+    for video_path in video_paths:
+        shutil.copy2(video_path, output_prefix_dir)
+    return "The files are successfully saved"
