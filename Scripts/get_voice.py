@@ -1,8 +1,3 @@
-import random
-import os
-import librosa
-
-
 import os
 import random
 import librosa
@@ -20,8 +15,14 @@ def get_voices(args):
     """
     # Check if there are subfolders in the source directory
     subfolders = [f.path for f in os.scandir(args.source_dir) if f.is_dir()]
+    print('Checking for subfolders...')
+    print(f'---------------------------------------------\n'
+          f'{subfolders}\n'
+          f'---------------------------------------------')
 
-    if len(subfolders) < 1:
+    selected_folders = []
+    if len(subfolders) < 2:
+        print('No subfolders found, using the main directory.')
         # No subfolders, use the main directory
         selected_folders = [args.source_dir]
     else:
@@ -39,14 +40,15 @@ def get_voices(args):
         if not wav_files:
             continue
 
-        # If less than 1 subfolder is present, select two random wav files from the main directory
-        if len(subfolders) < 1 and len(wav_files) > 1:
+        selected_wav_files = []
+        # Here, select two random wav files regardless of the number of subfolders if there are enough wav files
+        if len(wav_files) > 1:
             selected_wav_files = random.sample(wav_files, 2)  # Ensure there are at least two to choose from
         else:
-            selected_wav_files = [random.choice(wav_files)]
+            selected_wav_files = wav_files  # Use whatever is available if less than 2
 
         for selected_wav_file in selected_wav_files:
-            print(f'We select this file {selected_wav_file}')
+            print(f'Selected file: {selected_wav_file}')
             # Extract voice identity from the filename
             voice_identity = os.path.basename(selected_wav_file).split("_")[0]
 
