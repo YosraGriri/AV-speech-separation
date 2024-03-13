@@ -1,6 +1,10 @@
 " VoxCeleb2 Dataset Preparation Instructions
 " ==========================================
+Download and decompress the data. Assume the data directory is ${vox}, which contains the folder test. Follow the steps below:
 
+1. Data preparation
+python vox_prepare.py --root ${vox} --ffmpeg /path/to/ffmpeg --rank ${rank} --nshard ${nshard} --step ${step}
+This will generate a list of file-ids (${vox}/file.list, by step 1) and extract audio wavform from original videos (by step 2). ${step} ranges from 1,2. ${nshard} and ${rank} are only used in step 2. This would shard all videos into ${nshard} and extract audio for ${rank}-th shard, where rank is an integer in [0,nshard-1].
 " Step 1: Extract WAV Files
 " -------------------------
 " To begin processing the VoxCeleb2 dataset, the first step is to extract WAV files from the dataset. 
