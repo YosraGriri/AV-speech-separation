@@ -17,6 +17,7 @@ def select_wav_from_sources(root_dir):
     Returns:
     - list: Paths to two selected .wav files from different sources.
     """
+    
     source_dirs = [d for d in Path(root_dir).iterdir() if d.is_dir()]
     selected_files = []
 
@@ -40,6 +41,7 @@ def get_voices(args):
     """
     voices_data = []
     video_paths = []
+    voice_durations = []
     selected_wav_files = select_wav_from_sources(args.source_dir)
     print(selected_wav_files)
 
@@ -53,8 +55,10 @@ def get_voices(args):
             video_paths.append(selected_wav_file)
 
         voice_identity = Path(selected_wav_file).stem.split("_")[0]
-        voice, _ = librosa.load(selected_wav_file, sr=args.sr, mono=True)
-        voice, _ = librosa.effects.trim(voice)
+        voice, sr = librosa.load(selected_wav_file, sr=args.sr, mono=True)
+        duration = len(voice) / sr
+        voice_durations.append(duration)
+        #voice, _ = librosa.effects.trim(voice)
 
         if voice.std() == 0:  # Skip silent voices
             continue
@@ -64,4 +68,4 @@ def get_voices(args):
         if len(voices_data) >= args.n_sources:
             break
 
-    return voices_data, video_paths
+    return voices_data, video_paths, voice_durations
