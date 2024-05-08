@@ -1,21 +1,10 @@
-#!/usr/bin/env python
-
-# Copyright (c) Facebook, Inc. and its affiliates.
-# All rights reserved.
-#
-# This source code is licensed under the license found in the
-# LICENSE file in the root directory of this source tree.
-
 import os
 import argparse
-import librosa
 import soundfile as sf
 from scipy.io import wavfile
 import numpy as np
-from PIL import Image
 import torchvision.transforms as transforms
 import torch
-import torch.nn.functional as F
 from options.test_options import TestOptions
 from models.models import ModelBuilder
 from models.audioVisual_model import AudioVisualModel
@@ -23,6 +12,7 @@ from data.audioVisual_dataset import generate_spectrogram_complex, load_mouthroi
     load_frame
 from utils import utils
 from utils.lipreading_preprocess import *
+from utils.beamformer import calculate_psd_matrices
 from shutil import copy
 from facenet_pytorch import MTCNN
 
@@ -38,8 +28,52 @@ def clip_audio(audio):
     audio[audio < -1.] = -1.
     return audio
 
+def print_mask_info(mask, mask_name="Mask"):
+    print(f"{mask_name} Info:")
+    print("Shape:", mask.shape)
+    print("Dtype:", mask.dtype)
+    # Check if the tensor is complex
+    if torch.is_complex(mask):
+        print("Contains complex values.")
+        # You can also print some of the values to inspect
+        print("Sample values (real part):", mask.real[:5])
+        print("Sample values (imaginary part):", mask.imag[:5])
+    else:
+        print("Contains real values only.")
+        # Print first few values
+        print("Sample values:", mask[:5])
 
-def get_separated_audio(outputs, batch_data, opt):
+def get_separated_audio(outputs, batch_data, opt, wav=False):
+    """
+       Extracts separated audio signals from the mixed audio input based on model predictions.
+
+       This function takes as input the batch data containing the mixed audio spectrogram and
+       the prediction outputs from the deep learning model, which include the masks for each audio
+       source within the mixed audio. These masks are essentially filters that indicate which parts
+       of the mixed spectrogram belong to each of the original audio sources.
+
+       The function applies these predicted masks to the mixed audio spectrogram to isolate the
+       spectrograms of the individual sources. It performs this operation by element-wise multiplying
+       the mixed spectrogram with each mask, separately for each source. This operation isolates
+       components of the mixed signal attributed to each source based on the model's predictions.
+
+       After applying the masks, the function reconstructs the audio signals for each source from
+       their isolated spectrograms. It converts these isolated spectrograms back into time-domain
+       audio signals using the inverse Short-Time Fourier Transform (iSTFT). This reconstruction
+       process creates the separated audio signals from the complex spectrogram representations.
+
+       Parameters:
+           outputs (dict): The outputs from the deep learning model, containing the predicted masks
+               for audio separation.
+           batch_data (dict): The input batch data to the model, containing the mixed audio spectrogram
+               among other pieces of data.
+           opt (argparse.Namespace): A namespace object containing options/configurations for the
+               audio separation process.
+
+       Returns:
+           Tuple[np.ndarray, np.ndarray]: A tuple containing two numpy arrays, each representing
+               one of the separated audio signals in the time domain.
+       """
     # fetch data and predictions
     spec_mix = batch_data['audio_spec_mix1']
 
@@ -62,6 +96,7 @@ def get_separated_audio(outputs, batch_data, opt):
 
     mask_prediction_1.clamp_(-opt.mask_clip_threshold, opt.mask_clip_threshold)
     mask_prediction_2.clamp_(-opt.mask_clip_threshold, opt.mask_clip_threshold)
+    print_mask_info(mask_prediction_1, "Mask Prediction 1")
 
     spec_mix = spec_mix.numpy()
     pred_masks_1 = mask_prediction_1.detach().cpu().numpy()
@@ -80,14 +115,22 @@ def get_separated_audio(outputs, batch_data, opt):
                                                           length=int(opt.audio_length * opt.audio_sampling_rate))
     preds_wav_2 = utils.istft_reconstruction_from_complex(pred_spec_2_real, pred_spec_2_imag, hop_length=opt.hop_size,
                                                           length=int(opt.audio_length * opt.audio_sampling_rate))
+
+    # Preparing masks as NumPy arrays for return
+    output_masks_np = (mask_prediction_1.detach().cpu().numpy(), mask_prediction_2.detach().cpu().numpy())
+
     return preds_wav_1, preds_wav_2
 
 
 def main():
     ##Parse command-line arguments to configure the run.
+
+
     opt = TestOptions().parse()
     # Set device to CUDA, indicating the use of GPU.
     opt.device = torch.device("cuda")
+
+
 
     # Network Builders
 
@@ -123,9 +166,11 @@ def main():
         audioVisual_feature_dim=opt.audioVisual_feature_dim,
         identity_feature_dim=opt.identity_feature_dim,
         weights=opt.weights_unet)
-    """Function: Processes audio signals, likely for tasks such as
-		source separation or enhancement, using a U-Net architecture known 
-		for its effectiveness in such tasks."""
+    """
+    Function: Processes audio signals, likely for tasks such as
+	source separation or enhancement, using a U-Net architecture known 
+	for its effectiveness in such tasks.
+	"""
 
     net_vocal_attributes = builder.build_vocal(
         pool_type=opt.audio_pool,
@@ -267,9 +312,24 @@ def main():
         data['audio_spec_A2'] = torch.FloatTensor(audio_spec_1).unsqueeze(0)
         data['audio_spec_mix2'] = torch.FloatTensor(audio_mix_spec).unsqueeze(0)
 
+        for key, tensor in data.items():
+            print(f"Shape of {key} before model call: {tensor.shape}")
+
         outputs = model.forward(data)
         print('Hellloo finished processing most of the signal! ')
-        reconstructed_signal_1, reconstructed_signal_2 = get_separated_audio(outputs, data, opt)
+        print('Now Getting the masks')
+        reconstructed_signal_1, reconstructed_signal_2 = get_separated_audio(outputs, data, opt,
+                                                                                     wav=False)
+        base_id1 = os.path.splitext(os.path.basename(opt.audio1_path))[0]
+        base_id2 = os.path.splitext(os.path.basename(opt.audio2_path))[0]
+        print(f'First baseID: {base_id1}\n'
+              f'second baseID: {base_id2}')
+        # Generate a base filename for the masks
+        mask_filename_base = utils.generate_mask_filename(base_id1, base_id2).split('_mask.npy')[
+            0]  # To match with the expected input for 'save_masks_as_numpy'
+        output_dir_base = "../../data/Masks"
+        output_dir = os.path.join(output_dir_base, mask_filename_base)
+        #utils.save_masks_as_numpy([mask1_np, mask2_np], base_id1, base_id2, output_dir)
         reconstructed_signal_1 = reconstructed_signal_1 * normalizer1
         reconstructed_signal_2 = reconstructed_signal_2 * normalizer2
         sep_audio1[sliding_window_start:sliding_window_end] = sep_audio1[

@@ -4,7 +4,6 @@ from simulate_room import *
 from plot import *
 from get_voice import get_voices
 import json
-import shutil
 from collections import defaultdict
 from utils import *
 
@@ -57,19 +56,15 @@ def generate_unique_samples(args, num_samples):
 
 def generate_sample_vox(args: argparse.Namespace, idx: int) -> str:
     output_prefix_dir = os.path.join(args.output_path, '{:05d}'.format(idx))
-    Path(output_prefix_dir).mkdir(parents=True, exist_ok=True)
-
-    voices_data, video_paths = get_voices(args)
+    #Path(output_prefix_dir).mkdir(parents=True, exist_ok=True)
+    voices_data, video_paths, voice_durations = get_voices(args)
 
     # Use the updated function to generate combination ID and modified paths
     voice_combination_id, last_three_parts = generate_voice_combination_id_vox(video_paths)
     print(f'The voice combination ID is: {voice_combination_id}')
     print(f'the length of voices_data is{len(voices_data)}')
 
-    # [3] Sample background with the same length as voice signals
-    total_samples = int(args.duration * args.sr)
-
-    # [4] Configure the room and add sound sources
+    # [3] Configure the room and add sound sources
     all_fg_signals = []
     all_voice_positions = []  # Store coordinates of all sources
     e_absorption, max_order = pra.inverse_sabine(args.rt60, args.room_dimensions)
@@ -78,10 +73,17 @@ def generate_sample_vox(args: argparse.Namespace, idx: int) -> str:
         max_order = args.max_order
     materials = pra.Material(e_absorption)
 
-    for voice_idx in range(args.n_sources):
+    for voice_idx, (voice, duration) in enumerate(zip(voices_data, voice_durations)):
+
+
+
+        print(f'---------------------------------------\n'
+              f'duration of the audio is: {duration}\n'
+              f'---------------------------------------')
+
         print(f'Length of voices_data: {len(voices_data)}, Current voice_idx: {voice_idx}')
 
-        print(f'index voice: {voice_idx}')
+        print(f'Index voice: {voice_idx}')
 
         # Re-generate room to save ground truth
         room = create_room(args.sr,
@@ -96,15 +98,23 @@ def generate_sample_vox(args: argparse.Namespace, idx: int) -> str:
         mic_center = [x * 0.5 for x in args.room_dimensions[:2]]
         mic_center.append(args.avg_human_height)
         print(f'The mic center coordinates are:{mic_center}')
-
+        total_samples = int(duration * args.sr)
         mic_dim = add_circular_array(room, mic_center, args.mic_radius, args.n_mics)
         max_radius = min(args.room_dimensions[0], args.room_dimensions[1]) / 2
 
-        # Generate a random angle for the speech source within the range [0, 2π]
-        voice_theta = np.random.uniform(low=0, high=2 * np.pi)
+        # Check if the angle and radius should be set to fixed values or chosen randomly
+        if not args.random:
+            # Set the angle and radius to the user-provided fixed values
+            # Ensure that args.source_angle is given in radians if it's consistent with the random generation range of [0, 2π]
+            voice_theta = np.radians(args.voice_theta)
 
-        # Generate a random radius within the range [0, max_radius]
-        voice_radius = np.random.uniform(low=0, high=max_radius)
+            voice_radius = (args.room_dimensions[0] + args.room_dimensions[1])/2
+        else:
+            # Generate a random angle for the speech source within the range [0, 2π]
+            voice_theta = np.random.uniform(low=0, high=2 * np.pi)
+
+            # Generate a random radius within the range [0, max_radius]
+            voice_radius = np.random.uniform(low=0, high=max_radius)
 
         # Calculate the corresponding coordinates based on the generated angle and radius
         voice_loc = [
@@ -121,7 +131,6 @@ def generate_sample_vox(args: argparse.Namespace, idx: int) -> str:
         ]
 
         all_voice_positions.append(voice_loc)  # Append coordinates of current source to the list
-
         print(f'The voice has this location {voice_loc}')
         print('----------------------------------')
         room.add_source(voice_loc, signal=voices_data[voice_idx][0])
@@ -135,10 +144,7 @@ def generate_sample_vox(args: argparse.Namespace, idx: int) -> str:
         fg_signals = fg_signals * fg_target / abs(fg_signals).max()
         all_fg_signals.append(fg_signals)
 
-
-
-    simulated_RIR_dir = os.path.join(args.output_path, "VoxCeleb2")
-    simulated_RIR_dir = Path (simulated_RIR_dir)
+    simulated_RIR_dir = Path(args.output_path)
     simulated_RIR_dir.mkdir(parents=True, exist_ok=True)  # Ensure the base directory exists
 
     for mic_idx in range(args.n_mics):
@@ -163,51 +169,61 @@ def generate_sample_vox(args: argparse.Namespace, idx: int) -> str:
 
             # Constructing the full path for the file to be saved
             mic_simulated_dir = simulated_RIR_dir / filename
-            mic_simulated_dir= Path(mic_simulated_dir)
+            mic_simulated_dir = Path(mic_simulated_dir)
             print('--------\n--------\n--------\n--------\n--------')
-            print(mic_simulated_dir)
+
+
             print('--------\n--------\n--------\n--------\n--------')
+           #### A comment for Myself, Path Creation here
             # Ensuring the parent directory of the file exists
             mic_simulated_dir.parent.mkdir(parents=True, exist_ok=True)
             # Saving the signal to file
             sf.write(mic_simulated_dir, signal[mic_idx], args.sr)
-
         ##### For now not saving mixtures deactivated! #####
 
         # Combine and save the mixed signal in the designated 'mixed' directory
-        #mixed_dir = os.path.join(simulated_RIR_dir, "mixed")
-        #Path(mixed_dir).mkdir(parents=True, exist_ok=True)
+        # mixed_dir = os.path.join(simulated_RIR_dir, "mixed")
+        # Path(mixed_dir).mkdir(parents=True, exist_ok=True)
         mixed_filename = f"{voice_combination_id}_mic{mic_idx}.wav"
-        #mixed_path = os.path.join(mixed_dir, mixed_filename)
-        #mixed_path = Path(mixed_path)
-        #print(mixed_path)
-        #print('--------\n--------\n--------\n--------\n--------')
-        #mixed_signal = sum(all_fg_signals)  # This is a simple sum of signals; adjust according to your needs
-        #sf.write(mixed_path, mixed_signal, args.sr)
+        # mixed_path = os.path.join(mixed_dir, mixed_filename)
+        # mixed_path = Path(mixed_path)
+        # print(mixed_path)
+        # print('--------\n--------\n--------\n--------\n--------')
+        # mixed_signal = sum(all_fg_signals)  # This is a simple sum of signals; adjust according to your needs
+        # sf.write(mixed_path, mixed_signal, args.sr)
 
         # Save metadata
-        with open(mixed_filename.replace(".wav", ".json"), 'w') as f:
+        parent_dir = Path(args.output_path).parent
+        json_dir = Path(os.path.join(parent_dir, 'metadata'))
+        print(json_dir)
+
+        json_dir.mkdir(parents=True, exist_ok=True)
+        mixed_filename = mixed_filename.replace(".wav", ".json")
+        file_path = os.path.join(json_dir, mixed_filename)
+        with open(Path(file_path), 'w') as f:
             json.dump({
                 "mic_idx": mic_idx,
                 "fg_vol": fg_target,
                 "voice_positions": voice_loc,
                 "absorption": e_absorption,
             }, f)
-        #print(f' the json file is saved')
+        # print(f' the json file is saved')
 
     # [6]
+    parent_dir = Path(args.output_path).parent
+    room_path = Path(parent_dir, 'RoomPlots')
     plot_room(room,
               source_coordinates=all_voice_positions,
               mic_coordinates=mic_dim,
               xlim=args.room_dimensions[0],
               ylim=args.room_dimensions[1],
               zlim=args.room_dimensions[2],
-              save_path=args.output_path)
+              save_path=room_path)
     print('room is saved')
 
     # Copy video files to the output directory
-    for video_path in video_paths:
-        shutil.copy2(video_path, output_prefix_dir)
+    #for video_path in video_paths:
+     #   shutil.copy2(video_path, output_prefix_dir)
     metadata = {
         "output_prefix_dir": output_prefix_dir,
         "voice_combination_id": voice_combination_id,
