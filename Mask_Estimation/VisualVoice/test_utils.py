@@ -5,6 +5,7 @@ from scipy.io import wavfile
 import numpy as np
 import torchvision.transforms as transforms
 import torch
+#from ..beamformer.GEV_Beamformer import beamformer
 from options.test_options import TestOptions
 from models.models import ModelBuilder
 from models.audioVisual_model import AudioVisualModel
@@ -82,6 +83,9 @@ def get_separated_audio(outputs, batch_data, opt, wav=False):
     mask_prediction_2.clamp_(-opt.mask_clip_threshold, opt.mask_clip_threshold)
 
     spec_mix = spec_mix.numpy()
+    print('-------\n-------\n------\n-------\n')
+    print(spec_mix.shape)
+
     pred_masks_1 = mask_prediction_1.detach().cpu().numpy()
     pred_masks_2 = mask_prediction_2.detach().cpu().numpy()
 
@@ -98,9 +102,12 @@ def get_separated_audio(outputs, batch_data, opt, wav=False):
     preds_wav_2 = utils.istft_reconstruction_from_complex(pred_spec_2_real, pred_spec_2_imag, hop_length=opt.hop_size,
                                                           length=int(opt.audio_length * opt.audio_sampling_rate))
     # Preparing masks as NumPy arrays for return
-    output_masks_np = (mask_prediction_1.detach().cpu().numpy(), mask_prediction_2.detach().cpu().numpy())
-
+    output_masks_np = (pred_masks_1, pred_masks_2)
+    print('Youhouhou')
+    print(f'The mask shape is: {pred_masks_1}')
     return preds_wav_1, preds_wav_2, output_masks_np[0], output_masks_np[1]
+
+
 
 def initialize_models_and_utilities(opt):
     builder = ModelBuilder()
@@ -205,14 +212,17 @@ def load_and_preprocess_data(opt, mtcnn, vision_transform):
     return audio1, audio2, audio_mix, audio_length, mouthroi_1, mouthroi_2, frames_1, frames_2
 
 class AudioProcessor:
-    def __init__(self, options):
+    def __init__(self, options, beamformer):
         self.opt = options
+        self.beamformer = beamformer
         self.opt.device = torch.device("cuda")
+
         self.model, self.mtcnn, self.lipreading_preprocessing_func, self.vision_transform = initialize_models_and_utilities(self.opt)
         self.audio1, self.audio2, self.audio_mix, self.audio_length, self.mouthroi_1, self.mouthroi_2, self.frames_1, self.frames_2 = load_and_preprocess_data(self.opt, self.mtcnn, self.vision_transform)
         self.sep_audio1 = np.zeros((self.audio_length))
         self.sep_audio2 = np.zeros((self.audio_length))
         self.overlap_count = np.zeros((self.audio_length))
+        self.masks = []  # Initialize an empty list to store masks
 
     def process_audio_segment(self, start, end):
         segment1_audio = self.audio1[start:end]
@@ -256,14 +266,20 @@ class AudioProcessor:
         else:
             normalizer1 = 1
             normalizer2 = 1
+        #Feeding data to the model
         outputs = self.model.forward(data)
+        # the output of the model is going to be fed to get_separated_audio
+        # For now I want to only use magnitude masks
         reconstructed_signal_1, reconstructed_signal_2, mask1_np, mask2_np = get_separated_audio(outputs, data, self.opt, wav=False)
+        # Calculate PSD matrices and apply beamforming
+        #psd_matrix_1, psd_matrix_2 = self.beamformer.calculate_psd_matrices(audio_mix_spec, mask1_np, mask1_np)
         reconstructed_signal_1 = reconstructed_signal_1 * normalizer1
         reconstructed_signal_2 = reconstructed_signal_2 * normalizer2
 
         self.sep_audio1[start:end] += reconstructed_signal_1
         self.sep_audio2[start:end] += reconstructed_signal_2
         self.overlap_count[start:end] += 1
+        return mask1_np, mask2_np, audio_mix_spec
 
     def process_final_segment(self):
         samples_per_window = int(self.opt.audio_length * self.opt.audio_sampling_rate)
@@ -316,6 +332,29 @@ class AudioProcessor:
         self.sep_audio1[-samples_per_window:] += reconstructed_signal_1
         self.sep_audio2[-samples_per_window:] += reconstructed_signal_2
         self.overlap_count[-samples_per_window:] += 1
+        return mask1_np, mask2_np, audio_mix_spec
+
+
+    def combine_masks(self, overlap=None):
+        # If non-overlapping, concatenate masks
+        if not overlap:
+            full_mask = np.concatenate(self.masks, axis=-1)
+        else:
+            # For overlapping segments, average or sum at the overlaps
+            full_length = self.audio_length  # Total length of the audio
+            full_mask = np.zeros((self.masks[0].shape[0], full_length))  # Initialize a mask of zeros
+            coverage = np.zeros(full_length)  # To track coverage for averaging
+
+            position = 0
+            for mask in self.masks:
+                end_position = position + mask.shape[1]
+                full_mask[:, position:end_position] += mask
+                coverage[position:end_position] += 1
+                position += self.opt.hop_size  # Move position by hop size for next segment
+
+            full_mask /= np.maximum(1, coverage)  # Avoid division by zero
+
+        return full_mask
 
     def save_results(self):
         # Extract video names from the path to use in the output directory name
@@ -344,3 +383,9 @@ class AudioProcessor:
         sf.write(os.path.join(output_dir, 'audio2_separated.wav'), avged_sep_audio2, self.opt.audio_sampling_rate)
 
         print(f'Files saved to {output_dir}')
+
+    def get_psd_matrix(self):
+        psd_matrix_target = self.beamformer.get_psd_matrix(self.spec)
+        psd_matrix_noise = self.beamformer.get_psd_matrix(self.spec)
+        return psd_matrix_target, psd_matrix_noise
+
