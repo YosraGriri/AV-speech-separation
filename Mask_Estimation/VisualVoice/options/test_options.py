@@ -12,12 +12,13 @@ from .base_options import BaseOptions
 class TestOptions(BaseOptions):
 	def initialize(self):
 		BaseOptions.initialize(self)
-		self.parser.add_argument('--mouthroi1_path', type=str, required=True)
-		self.parser.add_argument('--mouthroi2_path', type=str, required=True)
-		self.parser.add_argument('--audio1_path', type=str, required=True)
-		self.parser.add_argument('--audio2_path', type=str, required=True)
-		self.parser.add_argument('--video1_path', type=str, required=True)
-		self.parser.add_argument('--video2_path', type=str, required=True)
+		self.parser.add_argument('--mouthroi1_path', type=str, required=False)
+		self.parser.add_argument('--mouthroi2_path', type=str, required=False)
+		self.parser.add_argument('--audio1_path', type=str, required=False)
+		self.parser.add_argument('--audio2_path', type=str, required=False)
+		self.parser.add_argument('--video1_path', type=str, required=False)
+		self.parser.add_argument('--video2_path', type=str, required=False)
+		self.parser.add_argument('--base_dir', type=str, required=True)
 
 		self.parser.add_argument('--output_dir_root', type=str, default='output')
 		self.parser.add_argument('--hop_length', default=0.04, type=float, help='the hop length to perform audio separation in a sliding window approach')
@@ -26,6 +27,7 @@ class TestOptions(BaseOptions):
 		self.parser.add_argument('--spectrogram_type', type=str, default='magonly', choices=('complex', 'magonly'), help='whether to use magonly or complex spectrogram')
 		self.parser.add_argument('--mask_to_use', type=str, default='pred', choices=('gt', 'pred'), help='what phase to use')
 		self.parser.add_argument('--visualize_spectrogram', action='store_true', help='whether to use discriminator')
+		self.parser.add_argument('--n_mic', type=int, default=2, help='Number of microphones')
 
 		#model specification
 		self.parser.add_argument('--visual_pool', type=str, default='maxpool', help='avg or max pool for visual stream feature')

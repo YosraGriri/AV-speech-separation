@@ -124,7 +124,6 @@ def get_separated_audio(outputs, batch_data, opt, wav=False):
     magnitude_spec_mix = np.abs(spec_mix[0, 0] + 1j * spec_mix[0, 1])
     print(f'--------------\n-------------\n------------\n-------------')
     print(f'Shape of the wavform is: {preds_wav_1.shape}')
-    2/0
 
 
     # Save the magnitude spectrogram of the mixture to an .npy file

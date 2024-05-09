@@ -1,11 +1,12 @@
 ------------ Options -------------
-audio1_path: ./data/VoxCeleb2/raw_audio/id04030/7mXUMuo5_NE/00001.wav
-audio2_path: ./data/VoxCeleb2/raw_audio/id08548/0bZ1DyYeK54/00001.wav
+audio1_path: None
+audio2_path: None
 audioVisual_feature_dim: 1152
 audio_length: 2.55
 audio_normalization: True
 audio_pool: maxpool
 audio_sampling_rate: 16000
+base_dir: ../../data/VoxCeleb2/
 batchSize: 32
 checkpoints_dir: checkpoints/
 compression_type: none
@@ -25,10 +26,11 @@ mask_clip_threshold: 5
 mask_to_use: pred
 mode: test
 model: audioVisual
-mouthroi1_path: ./data/VoxCeleb2/mouth_roi/unseen_unheard_test/id04030/7mXUMuo5_NE/00001.h5
-mouthroi2_path: ./data/VoxCeleb2/mouth_roi/unseen_unheard_test/id08548/0bZ1DyYeK54/00001.h5
+mouthroi1_path: None
+mouthroi2_path: None
 nThreads: 16
 n_fft: 512
+n_mic: 2
 name: audioVisual
 normalization: True
 num_frames: 64
@@ -45,8 +47,8 @@ subtract_mean: True
 unet_input_nc: 2
 unet_ngf: 64
 unet_output_nc: 2
-video1_path: ./data/VoxCeleb2/mp4/id04030/7mXUMuo5_NE/00001.mp4
-video2_path: ./data/VoxCeleb2/mp4/id08548/0bZ1DyYeK54/00001.mp4
+video1_path: None
+video2_path: None
 video_sampling_rate: 1
 visual_feature_type: both
 visual_pool: maxpool
