@@ -11,9 +11,11 @@ def main():
                         help='Output path for saving room')
     parser.add_argument('--dataset', type=str, default='',
                         help='which dataset to process')
-    parser.add_argument('--duration', type=float, default=2.55,
+    parser.add_argument('--voice_theta', type=float, default=2.55,
                         help='Duration of the generated samples in seconds')
     parser.add_argument('--sr', type=int, default=16000,
+                        help='Sampling rate of the generated samples')
+    parser.add_argument('--random', type=bool, default=False,
                         help='Sampling rate of the generated samples')
     parser.add_argument('--n_sources', type=int, default=2,
                         help='Number of sound sources in the room')
