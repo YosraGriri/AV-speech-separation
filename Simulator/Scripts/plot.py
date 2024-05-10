@@ -34,11 +34,11 @@ def plot_room(room, source_coordinates=None, mic_coordinates=None, xlim=0, ylim=
     # Set aspect ratio to 'equal' for better visualization
     ax.set_box_aspect([1, 1, 1])
 
-    if save_path is not None:
-        save_dir = os.path.join(save_path, 'shoebox')
-        os.makedirs(save_dir, exist_ok=True)
-        plt.savefig(os.path.join(save_dir, f'shoebox.png'))
 
-        print(f"The plot are saved in: {save_dir}")
+    if save_path is not None:
+        os.makedirs(save_path, exist_ok=True)
+        plt.savefig(os.path.join(save_path, f'shoebox.png'))
+
+        print(f"The plot are saved in: {save_path}")
 
     #plt.show()

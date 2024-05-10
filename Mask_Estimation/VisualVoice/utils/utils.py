@@ -174,3 +174,55 @@ def object_collate(batch):
         return [object_collate(samples) for samples in transposed]
 
     raise TypeError((error_msg_fmt.format(type(batch[0]))))
+
+
+def save_masks_as_numpy(masks,  base_id1, base_id2, output_dir):
+    """
+    Saves given masks as numpy array files with names related to the base_identifier.
+
+    Parameters:
+    masks (list of numpy arrays): The audio source separation masks to save.
+    base_identifier (str): A string identifier derived from the input audio/video files.
+    output_dir (str): The directory where the numpy arrays will be saved.
+    """
+    # Create the output directory if it doesn't exist
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Define filenames for each mask based on the base identifiers
+    filenames = [
+        f"{base_id1}_mask.npy",
+        f"{base_id2}_mask.npy"
+    ]
+
+    # Save each mask as a numpy file within the output directory
+    for mask, filename in zip(masks, filenames):
+        mask_filepath = os.path.join(output_dir, filename)
+        np.save(mask_filepath, mask)
+        print(f"Mask saved as {mask_filepath}")
+
+def generate_mask_filename(base_id1, base_id2):
+    """
+    Generates a filename for a mask file based on the base identifiers of two input audio files.
+
+    Parameters:
+    - base_id1: The base identifier for the first audio file.
+    - base_id2: The base identifier for the second audio file.
+
+    Returns:
+    - A string representing the filename for the mask file.
+    """
+    # Extract the 'micX' part from the first base identifier
+    # Assumes the format "number_micX_voiceX"
+    mic_part = base_id1.split("_")[1]
+
+    # Extract numeric parts for a concise filename
+    num_part1 = base_id1.split('_')[0]
+    num_part2 = base_id2.split('_')[0]
+
+    # Constructing the mask filename
+    mask_filename = f"{num_part1}_{num_part2}_{mic_part}_mask.npy"
+
+    return mask_filename
+
+
+

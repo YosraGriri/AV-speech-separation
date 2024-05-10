@@ -105,6 +105,7 @@ def generate_sample_vox(args: argparse.Namespace, idx: int) -> str:
         max_radius = min(args.room_dimensions[0], args.room_dimensions[1]) / 2
 
         # Check if the angle and radius should be set to fixed values or chosen randomly
+
         # Generate a random angle for the speech source within the range [0, 2π]
 
         if not args.random:
@@ -149,6 +150,7 @@ def generate_sample_vox(args: argparse.Namespace, idx: int) -> str:
         all_fg_signals.append(fg_signals)
 
     simulated_RIR_dir = Path(args.output_path)
+
     simulated_RIR_dir.mkdir(parents=True, exist_ok=True) # Ensure the base directory exists
     all_signals = []
 
@@ -179,11 +181,17 @@ def generate_sample_vox(args: argparse.Namespace, idx: int) -> str:
 
 
             print('--------\n--------\n--------\n--------\n--------')
+
+            print('--------\n--------\n--------\n--------\n--------')
+
+
+            print('--------\n--------\n--------\n--------\n--------')
            #### A comment for Myself, Path Creation here
             # Ensuring the parent directory of the file exists
             mic_simulated_dir.parent.mkdir(parents=True, exist_ok=True)
             # Saving the signal to file
             sf.write(mic_simulated_dir, signal[mic_idx], args.sr)
+
         all_signals.append(signal[mic_idx])
         print(len(all_signals))
         print(signal[mic_idx].shape)
