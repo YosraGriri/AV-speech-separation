@@ -3,7 +3,7 @@ import random
 from pathlib import Path
 
 
-def select_random_files(base_dir, n_mic):
+def select_random_files(base_dir, n_mic, voice_id):
     # Define paths to the main categories
     mouth_roi_base = os.path.join(base_dir, 'mouth_roi/unseen_unheard_test')
     audio_base = os.path.join(base_dir, 'raw_audio_simulated')
@@ -33,14 +33,18 @@ def select_random_files(base_dir, n_mic):
         video_file_path = os.path.join(video_path, video_file)
 
         # Generate audio file paths according to the naming convention
-        audio_file_full_paths = [os.path.join(audio_path, f"{file_id}_mic{i}.wav") for i in range(n_mic)]
+        audio_file_full_paths = [os.path.join(audio_path, f"{file_id}_mic{i}_voice{str(voice_id)}.wav") for i in range(n_mic)]
 
         # For the first parent ID, assign to audio1, for the second, assign to audio2
         if index == 0:
+            audio_file_full_paths = [os.path.join(audio_path, f"{file_id}_mic{i}_voice0.wav") for i in
+                                     range(n_mic)]
             audio1_paths = audio_file_full_paths
             mouth_roi1_path = os.path.join(mouth_roi_path, mouth_roi_file)
             video1_path = video_file_path
         else:
+            audio_file_full_paths = [os.path.join(audio_path, f"{file_id}_mic{i}_voice1.wav") for i in
+                                     range(n_mic)]
             audio2_paths = audio_file_full_paths
             mouth_roi2_path = os.path.join(mouth_roi_path, mouth_roi_file)
             video2_path = video_file_path

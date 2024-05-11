@@ -176,15 +176,7 @@ def generate_sample_vox(args: argparse.Namespace, idx: int) -> str:
             # Constructing the full path for the file to be saved
             mic_simulated_dir = simulated_RIR_dir / filename
             mic_simulated_dir = Path(mic_simulated_dir)
-            print(mic_simulated_dir)
-            print('--------\n--------\n--------\n--------\n--------')
-
-
-            print('--------\n--------\n--------\n--------\n--------')
-
-            print('--------\n--------\n--------\n--------\n--------')
-
-
+            print(f'mic_simulated_dir: {os.path.dirname(mic_simulated_dir)}')
             print('--------\n--------\n--------\n--------\n--------')
            #### A comment for Myself, Path Creation here
             # Ensuring the parent directory of the file exists

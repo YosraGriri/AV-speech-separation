@@ -14,7 +14,7 @@ def main():
     complex_spectrograms = []
 
     # Select files to process
-    file_selections = select_random_files(opt.base_dir, opt.n_mic)
+    file_selections = select_random_files(opt.base_dir, opt.n_mic, voice_id=0)
     pprint(file_selections)
 
     for selection in file_selections:
@@ -42,6 +42,9 @@ def main():
             is_complex_mask_2 = np.iscomplexobj(mask2)
             print(f"Is mask_prediction_1 complex? {is_complex_mask_1}")
             print(f"Is mask_prediction_2 complex? {is_complex_mask_2}")
+            np.save(f'model_results/model_output/target_mask_{mic_id_1}.npy', mask1)
+            np.save(f'model_results/model_output/noise_mask_{mic_id_2}.npy', mask2)
+            np.save(f'model_results/model_output/mixture_spec_{mic_id_1}.npy', audio_mix_spec)
             sliding_window_start += int(opt.hop_length * opt.audio_sampling_rate)
             # Compute PSD matrices and handle results
             psd_target = compute_psd_matrix(audio_mix_spec, mask1)
@@ -83,8 +86,8 @@ def main():
         np.save(output_psd_noise_multichannel, energy_diagonal_noise_multichannel)
 
         #Beamform it baby!
-        gev_beamformer = GEVBeamformer()
-        bf_vector = gev_beamformer.get_beamforming_vector(multichannel_psd_target, multichannel_psd_noise)
+        #gev_beamformer = GEVBeamformer()
+        #bf_vector = gev_beamformer.get_beamforming_vector(multichannel_psd_target, multichannel_psd_noise)
 
 
 if __name__ == '__main__':
