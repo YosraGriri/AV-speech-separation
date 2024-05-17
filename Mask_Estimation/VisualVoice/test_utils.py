@@ -223,7 +223,9 @@ class AudioProcessor:
         self.sep_audio2 = np.zeros((self.audio_length))
         self.overlap_count = np.zeros((self.audio_length))
         self.masks = []  # Initialize an empty list to store masks
-
+        self.masks1 = []  # Initialize an empty list to store masks for audio1
+        self.masks2 = []
+        self.spectrogram_mix = []
     def process_audio_segment(self, start, end):
         segment1_audio = self.audio1[start:end]
         segment2_audio = self.audio2[start:end]
@@ -279,6 +281,10 @@ class AudioProcessor:
         self.sep_audio1[start:end] += reconstructed_signal_1
         self.sep_audio2[start:end] += reconstructed_signal_2
         self.overlap_count[start:end] += 1
+        self.masks1.append(mask1_np)
+        self.masks2.append(mask2_np)
+        self.spectrogram_mix.append(audio_mix_spec)
+
         return mask1_np, mask2_np, audio_mix_spec
 
     def process_final_segment(self):
@@ -296,6 +302,7 @@ class AudioProcessor:
         audio_segment = (segment1_audio + segment2_audio) / 2
         audio_mix_spec = generate_spectrogram_complex(audio_segment, self.opt.window_size, self.opt.hop_size,
                                                       self.opt.n_fft)
+
         audio_spec_1 = generate_spectrogram_complex(segment1_audio, self.opt.window_size, self.opt.hop_size,
                                                     self.opt.n_fft)
         audio_spec_2 = generate_spectrogram_complex(segment2_audio, self.opt.window_size, self.opt.hop_size,
@@ -356,21 +363,46 @@ class AudioProcessor:
 
         return full_mask
 
-    def save_results(self):
+    def save_results(self, opt):
         # Extract video names from the path to use in the output directory name
-        parts1 = self.opt.video1_path.split('/')
-        parts2 = self.opt.video2_path.split('/')
-        video1_name = parts1[-3] + '_' + parts1[-2] + '_' + parts1[-1][:-4]
-        video2_name = parts2[-3] + '_' + parts2[-2] + '_' + parts2[-1][:-4]
+        # Split paths using the os.path.sep which will be '\\' on Windows and '/' on Unix
+        parts1 = opt.video1_path.split(os.path.sep)
+        parts2 = opt.video2_path.split(os.path.sep)
+
+        # Use os.path.basename to extract file names without the full path
+        audio1_basename = os.path.basename(opt.audio1_path).replace('.wav', '')
+        audio2_basename = os.path.basename(opt.audio2_path).replace('.wav', '')
+
+
+
+        # Check if parts have enough elements before accessing
+        if len(parts1) >= 3:
+            video1_name = parts1[-3] + '_' + parts1[-2] + '_' + parts1[-1][:-4]
+        else:
+            video1_name = os.path.basename(video1_path).split('.')[0]
+
+        if len(parts2) >= 3:
+            video2_name = parts2[-3] + '_' + parts2[-2] + '_' + parts2[-1][:-4]
+        else:
+            video2_name = os.path.basename(video2_path).split('.')[0]
 
         # Create a directory based on the video names
         output_dir = os.path.join(self.opt.output_dir_root, video1_name + 'VS' + video2_name)
         os.makedirs(output_dir, exist_ok=True)
 
+        output_audio1_path = os.path.join(output_dir, f"{audio1_basename}.wav")
+        output_audio2_path = os.path.join(output_dir, f"{audio2_basename}.wav")
+        output_audio_mixed_path = os.path.join(output_dir, f"{audio1_basename}_and_{audio2_basename}_mixed.wav")
+        output_audio1_separated_path = os.path.join(output_dir, f"{audio1_basename}_separated.wav")
+        output_audio2_separated_path = os.path.join(output_dir, f"{audio2_basename}_separated.wav")
+        output_mask1_path = os.path.join(output_dir, f"{audio1_basename}_mask.npy")
+        output_mask2_path = os.path.join(output_dir, f"{audio2_basename}_mask.npy")
+        output_spec_mix = os.path.join(output_dir, "spec_mix.npy")
+
         # Save the original and processed audio files
-        sf.write(os.path.join(output_dir, 'audio1.wav'), self.audio1, self.opt.audio_sampling_rate)
-        sf.write(os.path.join(output_dir, 'audio2.wav'), self.audio2, self.opt.audio_sampling_rate)
-        sf.write(os.path.join(output_dir, 'audio_mixed.wav'), self.audio_mix, self.opt.audio_sampling_rate)
+        sf.write(output_audio1_path, self.audio1, self.opt.audio_sampling_rate)
+        sf.write(output_audio2_path, self.audio2, self.opt.audio_sampling_rate)
+        sf.write(output_audio_mixed_path, self.audio_mix, self.opt.audio_sampling_rate)
 
         # Calculate the averaged separated audio accounting for overlaps
         avged_sep_audio1 = np.divide(self.sep_audio1, self.overlap_count, out=np.zeros_like(self.sep_audio1),
@@ -379,10 +411,20 @@ class AudioProcessor:
                                      where=self.overlap_count != 0)
 
         # Save the separated audio files
-        sf.write(os.path.join(output_dir, 'audio1_separated.wav'), avged_sep_audio1, self.opt.audio_sampling_rate)
-        sf.write(os.path.join(output_dir, 'audio2_separated.wav'), avged_sep_audio2, self.opt.audio_sampling_rate)
+        sf.write(output_audio1_separated_path, avged_sep_audio1, self.opt.audio_sampling_rate)
+        sf.write(output_audio2_separated_path, avged_sep_audio2, self.opt.audio_sampling_rate)
+
+        # Combine and save the masks
+        print(output_mask1_path)
+
+        self.spectrogram_mix
+        np.save(output_mask1_path, self.masks1)
+        np.save(output_mask2_path, self.masks2)
+        np.save(output_spec_mix, self.spectrogram_mix)
 
         print(f'Files saved to {output_dir}')
+        return output_dir
+
 
     def get_psd_matrix(self):
         psd_matrix_target = self.beamformer.get_psd_matrix(self.spec)
