@@ -1,11 +1,13 @@
 import subprocess
 import random
-
+import os
 # Base paths
 audio_base_path = "../../data/VoxCeleb2/raw_audio"
 audio_base_path = "../../data/simulated_RIR/VoxCeleb2/raw_audio"
-video_base_path = "../../data/VoxCeleb2/mp4"
-mouthroi_base_path = "../../data/VoxCeleb2/mouth_roi/unseen_unheard_test"
+audio_base_path = "E:/AV-speech-separation/data/VoxCeleb2/raw_audio_test"
+video_base_path = "E:/AV-speech-separation/data/VoxCeleb2/mp4"
+mouthroi_base_path = "E:/AV-speech-separation/data/VoxCeleb2/mouth_roi/unseen_unheard"
+#mouthroi_base_path = "E:\AV-speech-separation\data\VoxCeleb2\mouth_roi\unseen_unheard\"
 
 
 # Function to read pairs from file and generate variations
@@ -38,7 +40,40 @@ def generate_commands(variations):
         id2, session2, file2 = id2_variation.split('/')
         print (f'{audio_base_path}/{id1}/{session1}/{file1[:5]}.wav')
 
-        command = f"python test.py --audio1_path {audio_base_path}/{id1}/{session1}/{file1}.wav --audio2_path {audio_base_path}/{id2}/{session2}/{file2}.wav --mouthroi1_path {mouthroi_base_path}/{id1}/{session1}/{file1[:5]}.h5 --mouthroi2_path {mouthroi_base_path}/{id2}/{session2}/{file2[:5]}.h5 --video1_path {video_base_path}/{id1}/{session1}/{file1[:5]}.mp4 --video2_path {video_base_path}/{id2}/{session2}/{file2[:5]}.mp4 --num_frames 64 --audio_length 2.55 --hop_size 160 --window_size 400 --n_fft 512 --weights_lipreadingnet pretrained_models/lipreading_best.pth --weights_facial pretrained_models/facial_best.pth --weights_unet pretrained_models/unet_best.pth --weights_vocal pretrained_models/vocal_best.pth --lipreading_config_path configs/lrw_snv1x_tcn2x.json --unet_output_nc 2 --normalization --mask_to_use pred --visual_feature_type both --identity_feature_dim 128 --audioVisual_feature_dim 1152 --visual_pool maxpool --audio_pool maxpool --compression_type none --mask_clip_threshold 5 --hop_length 2.55 --audio_normalization --lipreading_extract_feature --number_of_identity_frames 1 --output_dir_root test/simulated_RIR/"
+        # Check if the files exist
+        if not os.path.isfile(f'{mouthroi_base_path}/{id1}/{session1}/{file1[:5]}.h5'):
+            print(f"Error: Mouth ROI file does not exist: {mouthroi_base_path}/{id2}/{session2}/{file2[:5]}.h5")
+            continue
+        if not os.path.isfile(f'{mouthroi_base_path}/{id2}/{session2}/{file2[:5]}.h5'):
+            print(f"Error: Mouth ROI file does not exist: {f'{mouthroi_base_path}/{id2}/{session2}/{file2[:5]}.h5'}")
+            continue
+
+        command = (f"python test.py --audio1_path {audio_base_path}/{id1}/{session1}/{file1}.wav "
+                   f"--audio2_path {audio_base_path}/{id2}/{session2}/{file2}.wav "
+                   f"--mouthroi1_path {mouthroi_base_path}/{id1}/{session1}/{file1[:5]}.h5 "
+                   f"--mouthroi2_path {mouthroi_base_path}/{id2}/{session2}/{file2[:5]}.h5 "
+                   f"--video1_path {video_base_path}/{id1}/{session1}/{file1[:5]}.mp4 "
+                   f"--video2_path {video_base_path}/{id2}/{session2}/{file2[:5]}.mp4 "
+                   f"--num_frames 64 --audio_length 2.55 --hop_size 160 --window_size 400 "
+                   f"--n_fft 512 --weights_lipreadingnet pretrained_models/lipreading_best.pth "
+                   f"--weights_facial pretrained_models/facial_best.pth "
+                   f"--weights_unet pretrained_models/unet_best.pth "
+                   f"--weights_vocal pretrained_models/vocal_best.pth "
+                   f"--lipreading_config_path configs/lrw_snv1x_tcn2x.json "
+                   f"--unet_output_nc 2 "
+                   f"--normalization "
+                   f"--mask_to_use pred "
+                   f"--visual_feature_type both "
+                   f"--identity_feature_dim 128 "
+                   f"--audioVisual_feature_dim 1152 "
+                   f"--visual_pool maxpool "
+                   f"--audio_pool maxpool "
+                   f"--compression_type none "
+                   f"--mask_clip_threshold 5 --hop_length 2.55 "
+                   f"--audio_normalization "
+                   f"--lipreading_extract_feature "
+                   f"--number_of_identity_frames 1 "
+                   f"--output_dir_root E:/AV-speech-separation/data/VoxCeleb2/results")
         commands.append(command)
     return commands
 
