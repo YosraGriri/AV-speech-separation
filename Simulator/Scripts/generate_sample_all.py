@@ -25,7 +25,7 @@ def generate_room_simulations(args):
     """
     folders = [f for f in os.listdir(args.source_dir) if os.path.isdir(os.path.join(args.source_dir, f))]
 
-    for idx, folder in enumerate(folders[51:]):
+    for idx, folder in enumerate(folders[19:21]):
         args.folder = folder
         print(f"Generating room simulation for folder: {folder}")
         generate_sample_vox(args, folder, idx)  # Use folder index for unique identification
@@ -47,6 +47,7 @@ def generate_sample_vox(args, folder, idx: int) -> str:
 
     for voice_idx, (voice, duration) in enumerate(zip(voices_data, voice_durations)):
         print(f'Processing voice {voice_idx} with duration {duration}s')
+
         video_path = video_paths[voice_idx]
         # Extract the actual voice signal assuming it's the first element
         voice_signal = voice[0] if isinstance(voice, (list, tuple)) else voice
@@ -72,6 +73,7 @@ def generate_sample_vox(args, folder, idx: int) -> str:
         total_samples = int(duration * args.sr)
         mic_dim = add_circular_array(room, mic_center, args.mic_radius, args.n_mics)
         max_radius = min(args.room_dimensions[0], args.room_dimensions[1]) / 2
+        voice_idx = 1
 
         voice_theta = np.random.uniform(low=0, high=2 * np.pi) if args.random else np.radians(
             args.angle_between_sources * voice_idx)
@@ -90,7 +92,9 @@ def generate_sample_vox(args, folder, idx: int) -> str:
         ]
 
         print(f'The voice has this location: {voice_loc}')
+        1/0
         room.add_source(voice_loc, signal=voice_signal)
+
 
         room.image_source_model()
         room.simulate()
@@ -139,7 +143,7 @@ def generate_sample_vox_(args, folder, idx: int) -> str:
     voices_data, video_paths, voice_durations = get_voices(args, folder)
     print(len(video_paths))
     print(video_paths)
-    1/0
+
 
     voice_combination_id, last_three_parts = generate_voice_combination_id_vox(video_paths)
     print(f'The voice combination ID is: {voice_combination_id}')
@@ -156,7 +160,7 @@ def generate_sample_vox_(args, folder, idx: int) -> str:
         print(f'---------------------------------------\n'
               f'Duration of the audio is: {duration}\n'
               f'---------------------------------------')
-        voice_idx = 0
+        voice_idx = 1
 
         room = create_room(args.sr,
                            shoebox=True,

@@ -1,5 +1,6 @@
 from generate_sample import *
 import multiprocessing.dummy as mp
+from generate_sample_all import generate_room_simulations
 
 def main():
     parser = argparse.ArgumentParser(description='Generate room acoustics samples.')
@@ -7,6 +8,8 @@ def main():
                         help='Output path for saving samples', required=True)
     parser.add_argument('--source_dir', type=str,
                         help='path containing sources', required=True)
+    parser.add_argument('--voice_identity', type=int, default=0,
+                        help='For the position of the voice: voice_identity*angle')
     parser.add_argument('--max_order', type=int, default=4,
                         help='Output path for saving room')
     parser.add_argument('--dataset', type=str, default='',
@@ -23,11 +26,11 @@ def main():
                         help='Number of microphones in the room')
     parser.add_argument('--n_outputs', type=int, default=2,
                         help='Number of outputs')
-    parser.add_argument('--n_samples', type=int, default=10,
+    parser.add_argument('--n_samples', type=int, default=1,
                         help='Number of outputs')
     parser.add_argument('--mic_center', type=list, default=[0, 0, 1.7],
                         help='Number of microphones in the room')
-    parser.add_argument("--angle_between_sources", type=float, default=180.0,
+    parser.add_argument("--angle_between_sources", type=float, default=15.0,
                         help="Angle between voice sources in degrees.")
     parser.add_argument('--mic_radius', type=float, default=0.035,
                         help='Radius of the circular microphone array')
@@ -41,7 +44,9 @@ def main():
                         help='Average human height')
 
     args = parser.parse_args()
-    generate_unique_samples(args, args.n_samples)
+    generate_room_simulations(args)
+    #generate_unique_samples(args, args.n_samples)
+    #generate_samples_for_all_folders(args)
 
 if __name__ == "__main__":
     main()
