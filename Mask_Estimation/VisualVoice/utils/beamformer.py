@@ -1,150 +1,260 @@
 import numpy as np
-from torch_complex.tensor import ComplexTensor
-from torch_complex import functional as FC
+import matplotlib.pyplot as plt
+from scipy.linalg import eigh, LinAlgError
+import librosa
+import mir_eval
 
-import numpy as np
+def getSeparationMetrics(audio1, audio2, audio1_gt, audio2_gt):
+    reference_sources = np.concatenate((np.expand_dims(audio1_gt, axis=0), np.expand_dims(audio2_gt, axis=0)), axis=0)
+    estimated_sources = np.concatenate((np.expand_dims(audio1, axis=0), np.expand_dims(audio2, axis=0)), axis=0)
+    (sdr, sir, sar, perm) = mir_eval.separation.bss_eval_sources(reference_sources, estimated_sources, False)
+    return np.mean(sdr), np.mean(sir), np.mean(sar)
+def compute_tdoa(r_u, r_v, theta, fs, c):
+    r_u = np.array(r_u)
+    r_v = np.array(r_v)
+    theta = np.array(theta)
+    return fs / c * np.dot((r_u - r_v), theta)
 
 
-def create_multichannel_psd(psd_matrices):
+def steering_vector(tdoa, f, N):
+    return np.exp(1j * 2 * np.pi * f * tdoa / N)
+
+
+def gain_function(delta_tdoa, alpha, beta):
+    return np.exp(-alpha * (delta_tdoa - beta)) / (1 + np.exp(-alpha * (delta_tdoa - beta)))
+
+
+
+def get_irms(stft_clean, stft_noise):
+    mag_clean = np.abs(stft_clean) ** 2
+    mag_noise = np.abs(stft_noise) ** 2
+    irm_speech = mag_clean / (mag_clean + mag_noise)
+    print(irm_speech.shape)
+    irm_noise = mag_noise / (mag_clean + mag_noise)
+    return irm_speech[:, 0, :], irm_noise[:, 0, :]
+def cirm(y_stft, s_stft, r_u, r_v, theta_t, theta_i, fs, c, alpha, beta, K=10, C=0.1, flat=True):
+    tdoa_uv = compute_tdoa(r_u, r_v, theta_t, fs, c)
+    delta_tdoa_uv = compute_tdoa(r_u, r_v, theta_t - theta_i, fs, c)
+
+    f = np.arange(y_stft.shape[0])
+    N = y_stft.shape[1]
+
+    A_uv = steering_vector(tdoa_uv, f[:, None], N)
+    A_uv = A_uv[:, :, None]
+    print(f'Shape of A_uv, steering vector is: {A_uv.shape}')
+    Y_uv = A_uv * y_stft * np.conj(y_stft)
+
+    G_uv = gain_function(delta_tdoa_uv, alpha, beta)
+
+    S_u = np.abs(s_stft)
+    I_u = np.abs(y_stft - s_stft)
+    B_u = np.zeros_like(S_u)
+
+    M_uv = (S_u ** 2 + G_uv * I_u ** 2) / (S_u ** 2 + I_u ** 2 + B_u ** 2)
+
+    if flat:
+        return M_uv
+    else:
+        return K * ((1 - np.exp(-C * M_uv)) / (1 + np.exp(-C * M_uv)))
+
+def get_power_spectral_density_matrix(observation, mask=None, normalize=True):
     """
-    Combines individual channel PSD matrices into a multichannel PSD matrix.
+    Calculates the weighted power spectral density matrix.
 
-    Args:
-        psd_matrices (list of np.ndarray): List containing the PSD matrices of each channel.
-                                          Each matrix is expected to have a shape of (1, 2, sensors, sensors).
+    This does not yet work with more than one target mask.
 
-    Returns:
-        np.ndarray: Multichannel PSD matrix.
+    :param observation: Complex observations with shape (bins, sensors, frames)
+    :param mask: Masks with shape (bins, frames) or (bins, 1, frames)
+    :return: PSD matrix with shape (bins, sensors, sensors)
     """
-    if not psd_matrices:
-        raise ValueError("The list of PSD matrices cannot be empty.")
-
-    # Print the number of PSD matrices and their individual shapes
-    print(f"Total number of PSD matrices: {len(psd_matrices)}")
-    print(f"Shape of the first PSD matrix: {psd_matrices[0].shape}")
-
-    # Assuming the shape of each PSD matrix is (1, 2, sensors, sensors)
-    _, _, sensors, _ = psd_matrices[0].shape
-    num_channels = len(psd_matrices) * 2  # Each matrix contains 2 sets of data
-
-    # Initialize the multichannel PSD matrix
-    multichannel_psd = np.zeros((sensors, num_channels * sensors, num_channels * sensors), dtype=np.complex64)
-    print(f"Initialized Multichannel PSD matrix shape: {multichannel_psd.shape}")
-
-    # Populate the multichannel PSD matrix
-    for idx, psd_matrix in enumerate(psd_matrices):
-        for j in range(2):  # Loop over the two data sets within each matrix
-            row_start = (idx * 2 + j) * sensors
-            col_start = row_start
-            print(f"Processing PSD matrix {idx} set {j}: Row start = {row_start}, Col start = {col_start}")
-
-            # Check and print the shape of the specific slice being assigned
-            print(f"Shape of psd_matrix[0, j]: {psd_matrix[0, j].shape}")
-
-            multichannel_psd[:, row_start:row_start + sensors, col_start:col_start + sensors] = psd_matrix[0, j]
-
-    return multichannel_psd
-
-
-def compute_psd_matrix(observation, mask=None, normalize=True):
-    """
-    Calculate the weighted power spectral density matrix using the observation and mask.
-    """
-    print(f'The observation shape is: {observation[0, 0].shape}')
-    print(f'The mask shape is: {mask[0, 0].shape}')
     bins, sensors, frames = observation.shape
-    observation = observation[:, :-1, :]
+    print(observation.shape)
+    # print(mask.shape)
 
     if mask is None:
         mask = np.ones((bins, frames))
     if mask.ndim == 2:
         mask = mask[:, np.newaxis, :]
-    else:
-        # Ensure the mask is compatible with the observation's dimensions.
-        mask = mask[:bins, :, :frames]
+        # mask = mask[:,:,  np.newaxis]
+        print(f'Mask shape is: {mask.shape}')
+    print(f'Spectrogram shape is: {observation.shape}')
+    psd = np.zeros((bins, sensors, sensors), dtype=np.complex64)
 
-    psd = np.einsum('...dt,...et->...de', mask * observation, observation.conj())
-
-    #psd = np.einsum('...dt,...et->...de', mask[0, 0] * observation[0,0], mask[0, 1] * observation[0, 1] .conj())
+    for b in range(bins):
+        print(bins)
+        mask_bin = mask[b, :, np.newaxis]
+        #print(mask_bin.shape)
+        spec_bin = observation[b]
+        #print(spec_bin.shape)
+        weighted_observation = mask_bin * spec_bin
+        psd[b] = np.dot(weighted_observation, observation[b].conj().T)
+    print(f'PSD shape is: {psd.shape}')
     if normalize:
         normalization = np.sum(mask, axis=-1, keepdims=True)
         psd /= normalization
     return psd
-def calculate_psd_matrices(spec_mix, mask_prediction_1, mask_prediction_2, opt):
+
+
+def condition_covariance(x, gamma):
+
+    scale = gamma * np.trace(x) / x.shape[-1]
+    scaled_eye = np.eye(x.shape[-1]) * scale
+    return (x + scaled_eye) / (1 + gamma)
+
+
+def get_gev_vector(target_psd_matrix, noise_psd_matrix):
     """
-    Calculate PSD matrices for separated audio sources given mixed spectrogram and predicted masks.
-
-    Args:
-    spec_mix (np.ndarray): Mixed audio spectrogram.
-    mask_prediction_1 (torch.Tensor): Predicted mask for the first audio source.
-    mask_prediction_2 (torch.Tensor): Predicted mask for the second audio source.
-    opt (argparse.Namespace): Options containing configuration for processing.
-
-    Returns:
-    Tuple[np.ndarray, np.ndarray]: PSD matrices for the first and second audio sources.
+    Returns the GEV beamforming vector.
+    :param target_psd_matrix: Target PSD matrix
+        with shape (bins, sensors, sensors)
+    :param noise_psd_matrix: Noise PSD matrix
+        with shape (bins, sensors, sensors)
+    :return: Set of beamforming vectors with shape (bins, sensors)
     """
-    # Assuming get_psd_matrix takes a spectrogram and returns its PSD matrix.
-    # Convert predictions to numpy if not already done.
-    pred_masks_1 = mask_prediction_1.detach().cpu().numpy()
-    pred_masks_2 = mask_prediction_2.detach().cpu().numpy()
+    bins, sensors, _ = target_psd_matrix.shape
+    beamforming_vector = np.empty((bins, sensors), dtype=np.complex128)
+    for f in range(bins):
+        try:
+            eigenvals, eigenvecs = eigh(target_psd_matrix[f, :, :],
+                                        noise_psd_matrix[f, :, :])
+            beamforming_vector[f, :] = eigenvecs[:, -1]
+        except np.linalg.LinAlgError:
+            print('LinAlg error for frequency {}'.format(f))
+            beamforming_vector[f, :] = (
+                    np.ones((sensors,)) / np.trace(noise_psd_matrix[f]) * sensors
+            )
+    return beamforming_vector
+def get_irms(stft_clean, stft_noise):
+    mag_clean = np.abs(stft_clean) ** 2
+    mag_noise = np.abs(stft_noise) ** 2
+    irm_speech = mag_clean / (mag_clean + mag_noise+1e-16)
+    print(irm_speech.shape)
+    irm_noise = mag_noise / (mag_clean + mag_noise+1e-16)
+    return irm_speech[:, :], irm_noise[:, :]
 
-    # Apply masks to mixed spectrogram to isolate source spectrograms
-    source_spec_1 = spec_mix * pred_masks_1
-    source_spec_2 = spec_mix * pred_masks_2
+def istft_reconstruction_from_complex(real, imag, hop_length=160, win_length=400, length=65535):
+    spec = real + 1j*imag
+    wav = librosa.istft(spec, hop_length=hop_length, win_length=win_length, length=length)
+    return np.clip(wav, -1., 1.)
+def gev_wrapper_on_masks(mix, noise_mask=None, target_mask=None, normalization=False, gamma=1e-1):
+    org_dtype = mix.dtype
+    mix = mix.astype(np.complex128)
+    mix = mix.T
 
     # Calculate PSD matrices
-    psd_matrix_1 = get_psd_matrix(source_spec_1)
-    psd_matrix_2 = get_psd_matrix(source_spec_2)
+    target_psd_matrix = get_power_spectral_density_matrix(mix, target_mask, normalize=True)
+    noise_psd_matrix = get_power_spectral_density_matrix(mix, noise_mask, normalize=True)
 
-    return psd_matrix_1, psd_matrix_2
+    # Debug: Print or plot PSD matrices
+    #plot_psd_matrix_channels(target_psd_matrix, 0, 0, "Target PSD Matrix Sensor 0")
+    #plot_psd_matrix_channels(noise_psd_matrix, 0, 0, "Noise PSD Matrix Sensor 0")
 
+    # Debug: Print or plot PSD matrices
+    #debug_psd(target_psd_matrix, "Target PSD Matrix")
+    #debug_psd(noise_psd_matrix, "Noise PSD Matrix")
 
-def get_psd_matrix(spec):
+    # Condition the noise PSD matrix
+    print(f'noise_psd_matrix shape is: {noise_psd_matrix.shape}')
+    noise_psd_matrix = condition_covariance(noise_psd_matrix, gamma)
+    noise_psd_matrix /= np.trace(noise_psd_matrix, axis1=-2, axis2=-1)[..., None, None]
+    print(f'noise_psd_matrix after covariance shape is: {noise_psd_matrix.shape}')
+    # Debug: Print or plot conditioned noise PSD matrix
+    #debug_psd(noise_psd_matrix, "Conditioned Noise PSD Matrix")
+
+    # Get GEV beamforming vector
+    W_gev = get_gev_vector(target_psd_matrix, noise_psd_matrix)
+    W_gev = phase_correction(W_gev)
+
+    #if normalization:
+        #W_gev = blind_analytic_normalization(W_gev, noise_psd_matrix)
+
+    # Debug: Print or plot GEV beamforming vector
+    print(f"GEV beamforming vector shape: {W_gev.shape}")
+
+    # Applyingbeamforming
+    print(f"mix vector shape: {mix.shape}")
+    output = apply_beamforming_vector(W_gev, mix)
+    output = output.astype(org_dtype)
+
+    return output.T
+
+def phase_correction(vector):
+    """Phase correction to reduce distortions due to phase inconsistencies
+    Args:
+    vector: Beamforming vector with shape (..., bins, sensors).
+    Returns: Phase corrected beamforming vectors. Lengths remain.
     """
-    Compute the Power Spectral Density (PSD) matrix for a given complex spectrogram.
 
-    The PSD matrix is computed as the outer product of the complex spectrogram with its
-    conjugate across time frames, and then summed over all frames to provide the average
-    PSD matrix.
+    w = vector.copy()
+    F, D = w.shape
+    for f in range(1, F):
+        w[f, :] *= np.exp(-1j * np.angle(
+            np.sum(w[f, :] * w[f - 1, :].conj(), axis=-1, keepdims=True)))
+    return w
+def apply_beamforming_vector(vector, mix):
+    return np.einsum('...a,...at->...t', vector.conj(), mix)
 
-    Parameters:
-    spec (torch.Tensor): A tensor containing the real and imaginary parts of the complex
-                         spectrogram with dimensions (Batch, Channel, Frame, Frequency, 2).
-                         The last dimension contains real and imaginary parts respectively.
+def gev_beamforming(audio_mix_spec_real,phase, irm_n_median, irm_t_median, gamma):
+    Y_hat = gev_wrapper_on_masks(audio_mix_spec_real[0].transpose(1, 0, 2), irm_n_median, irm_t_median, True, 1e-1)
+    Y_hat_time = istft_reconstruction_from_complex(Y_hat, phase)
+    return Y_hat_time
 
-    Returns:
-    torch.Tensor: The computed PSD matrix with dimensions (Batch, Frequency, Channel, Channel),
-                  representing the average PSD across all frames for each batch and frequency bin.
+def find_best_gamma(audio_mix_spec_real,phase, irm_n_median, irm_t_median, target_signal, noise_signal):
+    best_gamma = None
+    best_sdr = -np.inf
 
-    Example:
-    spec = torch.rand(10, 8, 100, 257, 2)  # A batch of 10, with 8 channels, 100 frames, 257 frequency bins
-    psd_matrix = get_psd_matrix(spec)
-    print(psd_matrix.shape)  # Expected output: torch.Size([10, 257, 8, 8])
+    for gamma in np.arange(0.01, 0.1, 0.01):
+        Y_hat_time = gev_beamforming(audio_mix_spec_real, phase, irm_n_median, irm_t_median, gamma)
+        sdr, sir, sar = getSeparationMetrics(Y_hat_time, noise_signal[:65535], target_signal[:65535], noise_signal[:65535])
+        print(f"Gamma: {gamma}, SDR: {sdr}, SIR: {sir}, SAR: {sar}")
+
+        if sdr > best_sdr:
+            best_sdr = sdr
+            best_gamma = gamma
+
+    best_output = gev_beamforming(audio_mix_spec_real, phase,irm_n_median, irm_t_median, best_gamma)
+
+    return best_gamma, best_sdr, best_output
+def plot_psd_matrix(psd_matrix, title):
     """
-    complex_spec = ComplexTensor(spec[..., 0], spec[..., 1])  # Create a complex tensor from real and imaginary parts
-    complex_spec = complex_spec.permute(0, 3, 1, 2)  # Reorder dimensions to (Batch, Frequency, Channel, Frame)
-    psd = FC.einsum("...ct,...et->...tce", [complex_spec, complex_spec.conj()])  # Outer product with the conjugate
-    psd = psd.sum(dim=-3)  # Sum over frames to get average PSD
-    return psd
-
-
-
-def get_psd_matrix_numpy(spec):
+    Plots the PSD matrix.
+    Args:
+        psd_matrix: PSD matrix with shape (bins, sensors, sensors)
+        title: Title of the plot
     """
-    Compute the Power Spectral Density (PSD) matrix for a given complex spectrogram in NumPy.
+    avg_psd = np.abs(psd_matrix).mean(axis=-1)  # Average over sensors to reduce dimensions
+    plt.imshow(avg_psd, aspect='auto', origin='lower')
+    plt.colorbar()
+    plt.title(title)
+    plt.xlabel('Sensors')
+    plt.ylabel('Frequency Bins')
+    plt.show()
+def debug_psd(psd_matrix, title):
+    print(f"{title} shape: {psd_matrix.shape}")
+    plot_psd_matrix(psd_matrix, title)
+def plot_psd_matrix_channels(psd_matrix, sensor_1, sensor_2, title):
+    psd_specific = np.abs(psd_matrix[:, sensor_1, sensor_2])
+    plt.imshow(psd_specific.T, aspect='auto', origin='lower')
+    plt.colorbar()
+    plt.title(f"{title} (Sensor {sensor_1} vs Sensor {sensor_2})")
+    plt.xlabel('Frequency Bins')
+    plt.ylabel('Time Frames')
+    plt.show()
 
-    Parameters:
-    spec (np.ndarray): A numpy array containing the complex spectrogram with dimensions
-                       (Batch, Channel, Frame, Frequency).
+def plot_irm(irm, title):
+    plt.figure(figsize=(10, 6))
+    plt.imshow(irm, aspect='auto', origin='lower', cmap='magma')
+    plt.colorbar()
+    plt.title(title)
+    plt.xlabel('Time Frames')
+    plt.ylabel('Frequency Bins')
+    plt.show()
 
-    Returns:
-    np.ndarray: The computed PSD matrix with dimensions (Batch, Frequency, Channel, Channel),
-                representing the average PSD across all frames for each batch and frequency bin.
-    """
-    # Assume spec is a complex numpy array with shape (Batch, Channel, Frame, Frequency)
-    complex_spec = spec.transpose(0, 3, 1, 2)  # Reorder dimensions for batch processing
-    psd = np.einsum('...ct,...et->...tce', complex_spec, np.conj(complex_spec))  # Outer product
-    psd = np.sum(psd, axis=-3)  # Sum over frames to get average PSD
-    return psd
-
-
+def plot_spectrogram(spectrogram, title):
+    plt.figure(figsize=(10, 6))
+    plt.imshow(20 * np.log10(np.abs(spectrogram) + 1e-10), aspect='auto', origin='lower', cmap='magma')
+    plt.colorbar()
+    plt.title(title)
+    plt.xlabel('Time Frames')
+    plt.ylabel('Frequency Bins')
+    plt.show()
