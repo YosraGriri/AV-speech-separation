@@ -24,6 +24,20 @@ target_path = "../data/VoxCeleb2/raw_audio_test/result/id08392_CZLQUQTssAE_00074
 noise_path = "../data/VoxCeleb2/raw_audio_test/result/id08392_CZLQUQTssAE_00074VSid05202_A_BuBRwHT5w_00017/noise.wav"
 noise_speech_path = "../data/VoxCeleb2/raw_audio_test/result/id08392_CZLQUQTssAE_00074VSid05202_A_BuBRwHT5w_00017/00074.wav"
 
+target_mask = np.load("../data/VoxCeleb2/raw_audio_test/result/id08392_CZLQUQTssAE_00074VSid05202_A_BuBRwHT5w_00017/00017_mask.npy")
+noise_mask = np.load("../data/VoxCeleb2/raw_audio_test/result/id08392_CZLQUQTssAE_00074VSid05202_A_BuBRwHT5w_00017/00074_mask.npy")
+noise_mask_real = noise_mask[0, 0, :, :]
+noise_mask_imag = noise_mask[0, 1, :, :]
+target_mask_real = target_mask[0, 0, :, :]
+target_mask_imag = target_mask[0, 1, :, :]
+noise_mask_magnitude = np.sqrt(noise_mask_real ** 2 + noise_mask_imag ** 2)
+target_mask_magnitude = np.sqrt(target_mask_real ** 2 + target_mask_imag ** 2)
+X_mask = target_mask_magnitude
+N_mask = noise_mask_magnitude
+N_mask = np.pad(N_mask, ((0, 1), (0, 0)), mode='constant', constant_values=1e-16)
+X_mask = np.pad(X_mask, ((0, 1), (0, 0)), mode='constant', constant_values=1e-16)
+
+
 def mix_transform_and_stft_audio_files(file1, file2, matrix_A=None, duration_seconds=2.55, sample_rate=16000):
     duration = int(duration_seconds * sample_rate)
     
@@ -72,17 +86,6 @@ def get_irms(stft_clean, stft_noise):
     irm_noise = mag_noise / (mag_clean + mag_noise+1e-16)
     return irm_speech[:, :], irm_noise[:, :]
 
-def inverse_stft(spec, hop_length, win_length, length):
-    """
-    Performs inverse STFT using librosa and clips the output to the range [-1, 1].
-    :param spec: STFT spectrogram
-    :param hop_length: Hop length for inverse STFT
-    :param win_length: Window length for inverse STFT
-    :param length: Length of the output signal
-    :return: Time-domain signal
-    """
-    wav = librosa.istft(spec, hop_length=hop_length, win_length=win_length, length=length)
-    return np.clip(wav, -1., 1.)
 
 mixed_signals, target, noise, Y, stft_clean, stft_noise = mix_transform_and_stft_audio_files(target_path, noise_path)
 irm_speech, irm_noise = get_irms(stft_clean, stft_noise)
@@ -100,6 +103,12 @@ Y_noise_hat_speakers = gev_wrapper_on_masks(Y_speakers, irm_speech_s1, irm_noise
 X_hat_speakers = librosa.istft(Y_hat_speakers, hop_length=160, win_length=400)
 X_noise_speakers = librosa.istft(Y_noise_hat_speakers, hop_length=160, win_length=400)
 
+
+Y_hat_speakers_visvoi = gev_wrapper_on_masks(Y_speakers, N_mask, X_mask)
+Y_noise_hat_speakers_visvoi = gev_wrapper_on_masks(Y_speakers, X_mask, N_mask)
+X_hat_speakers_visvoi = librosa.istft(Y_hat_speakers_visvoi, hop_length=160, win_length=400)
+X_noise_speakers_visvoi = librosa.istft(Y_noise_hat_speakers_visvoi, hop_length=160, win_length=400)
+
 sdr, sir , sar = getSeparationMetrics(X_hat[:duration], X_noise[:duration], target[:duration], noise[:duration])
 print("SDR:", sdr)
 print("SIR:", sir)
@@ -116,4 +125,15 @@ print("SDR:", sdr)
 print("SIR:", sir)
 print("SAR:", sar)
 pesq_score1 = pesq(16000, target[:duration], X_hat_speakers[:duration], 'wb')
+print("PESQ Score:", pesq_score1)
+
+print('--------------------------------')
+print('--------------------------------')
+print('--------------------------------')
+
+sdr, sir , sar = getSeparationMetrics(X_hat_speakers_visvoi[:duration], X_noise_speakers_visvoi[:duration], target[:duration], noise_speech[:duration])
+print("SDR:", sdr)
+print("SIR:", sir)
+print("SAR:", sar)
+pesq_score1 = pesq(16000, target[:duration], X_hat_speakers_visvoi[:duration], 'wb')
 print("PESQ Score:", pesq_score1)
