@@ -9,8 +9,10 @@ This project generates room impulse responses (RIR) using the Pyroom Acoustics l
 To install the necessary dependencies, run:
 ```bash
 pip install -r ../requirements.txt
+```bash
 
 ## Usage
+
 python main.py --output_path <output_path> --source_dir <source_dir> [other arguments]
 for example, to run this on the samples published in the ../data/test folder:
 python Scripts/main.py --source_dir  "../../data/test/raw_audio"    --output_path  "../../data/test/simulated/"
