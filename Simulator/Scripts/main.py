@@ -1,4 +1,4 @@
-from generate_sample import *
+import argparse
 import multiprocessing.dummy as mp
 from generate_sample_all import generate_room_simulations
 
@@ -45,8 +45,5 @@ def main():
 
     args = parser.parse_args()
     generate_room_simulations(args)
-    #generate_unique_samples(args, args.n_samples)
-    #generate_samples_for_all_folders(args)
-
 if __name__ == "__main__":
     main()

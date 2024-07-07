@@ -98,3 +98,16 @@ def create_room(fs,
             raise ValueError("Please provide room corners for the corners model.")
         room = pra.Room.from_corners(room_corners)
     return room
+
+
+def transform_mic_coordinates(mic_dim):
+    """
+    Transform microphone coordinates from a numpy array to a list of tuples.
+
+    Parameters:
+    - mic_dim: 2D numpy array with shape (3, n), where each column represents a microphone's 3D coordinates.
+
+    Returns:
+    - List of tuples, where each tuple contains the x, y, and z coordinates of a microphone.
+    """
+    return [(mic_dim[0, i], mic_dim[1, i], mic_dim[2, i]) for i in range(mic_dim.shape[1])]
