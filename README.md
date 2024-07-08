@@ -35,4 +35,6 @@ Each of these folders contains a README file with further explanations on how th
    git clone git@github.com:YosraGriri/AV-speech-separation.git
 
 2. Install all necessary libraries:
+```bash
 pip install -r requirements.txt
+```
