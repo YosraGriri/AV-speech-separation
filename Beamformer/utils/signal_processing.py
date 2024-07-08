@@ -12,6 +12,7 @@ from scipy.io.wavfile import write as wav_write
 from scipy.linalg import LinAlgError
 import string
 import threading
+import librosa
 
 def segment_axis(a, length, overlap=0, axis=None, end='cut', endvalue=0):
     if axis is None:
@@ -111,3 +112,15 @@ def istft(stft_signal, size=512, shift=256, window=signal.blackman, fading=True,
         time_signal = time_signal[size - shift:-(size - shift)]
 
     return time_signal
+
+def inverse_stft(spec, hop_length, win_length, length):
+    """
+    Performs inverse STFT using librosa and clips the output to the range [-1, 1].
+    :param spec: STFT spectrogram
+    :param hop_length: Hop length for inverse STFT
+    :param win_length: Window length for inverse STFT
+    :param length: Length of the output signal
+    :return: Time-domain signal
+    """
+    wav = librosa.istft(spec, hop_length=hop_length, win_length=win_length, length=length)
+    return np.clip(wav, -1., 1.)

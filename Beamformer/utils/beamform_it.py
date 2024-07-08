@@ -145,7 +145,7 @@ def gev_wrapper_on_masks(mix, noise_mask=None, target_mask=None, normalization=T
 
     target_psd_matrix = get_power_spectral_density_matrix(mix, target_mask, normalize=False)
     noise_psd_matrix = get_power_spectral_density_matrix(mix, noise_mask, normalize=True)
-    noise_psd_matrix = condition_covariance(noise_psd_matrix, 1e-6)
+    noise_psd_matrix = condition_covariance(noise_psd_matrix, 1e-3)
     noise_psd_matrix /= np.trace(noise_psd_matrix, axis1=-2, axis2=-1)[..., None, None]
     W_gev = get_gev_vector(target_psd_matrix, noise_psd_matrix)
     W_gev = phase_correction(W_gev)
