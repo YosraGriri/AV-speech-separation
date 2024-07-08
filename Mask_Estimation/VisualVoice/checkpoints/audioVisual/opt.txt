@@ -1,12 +1,12 @@
 ------------ Options -------------
-audio1_path: None
-audio2_path: None
+audio1_path: ..\..\data\test\raw_audio\id06913\Y60BPD7Ao1U\00089.wav
+audio2_path: ..\..\data\test\raw_audio\id04030\7mXUMuo5_NE\00002.wav
 audioVisual_feature_dim: 1152
 audio_length: 2.55
 audio_normalization: True
 audio_pool: maxpool
 audio_sampling_rate: 16000
-base_dir: ../../data/VoxCeleb2/
+base_dir: None
 batchSize: 32
 checkpoints_dir: checkpoints/
 compression_type: none
@@ -24,10 +24,11 @@ lipreading_config_path: configs/lrw_snv1x_tcn2x.json
 lipreading_extract_feature: True
 mask_clip_threshold: 5
 mask_to_use: pred
+masks_path: 
 mode: test
 model: audioVisual
-mouthroi1_path: None
-mouthroi2_path: None
+mouthroi1_path: ..\..\data\test\mouth_roi\id06913\Y60BPD7Ao1U\00089.h5
+mouthroi2_path: ..\..\data\test\mouth_roi\id04030\7mXUMuo5_NE\00002.h5
 nThreads: 16
 n_fft: 512
 n_mic: 2
@@ -35,7 +36,7 @@ name: audioVisual
 normalization: True
 num_frames: 64
 number_of_identity_frames: 1
-output_dir_root: test
+output_dir_root: ../../data/test/results/original/complex/
 reliable_face: False
 scale_h: [128]
 scale_w: [128]
@@ -47,8 +48,8 @@ subtract_mean: True
 unet_input_nc: 2
 unet_ngf: 64
 unet_output_nc: 2
-video1_path: None
-video2_path: None
+video1_path: ..\..\data\test\mp4\id06913\Y60BPD7Ao1U\00089.mp4
+video2_path: ..\..\data\test\mp4\id04030\7mXUMuo5_NE\00002.mp4
 video_sampling_rate: 1
 visual_feature_type: both
 visual_pool: maxpool
