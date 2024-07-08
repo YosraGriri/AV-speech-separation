@@ -36,8 +36,9 @@ To generate separated audio files using VisualVoice, you can run the following s
     python generate_test_commands.py
     ```
 
-## Data Paths
+The separated audio files and masks will be saved in the `../../data/test/results/original/complex/` directory for now or any other directory of your choice. 
 
-Before running the scripts, ensure that the data paths are set correctly according to your use:
+
+
 
 
