@@ -1,17 +1,21 @@
 import os
-import librosa
 import argparse
 import numpy as np
 import pandas as pd
 from pathlib import Path
 import mir_eval.separation
 from pypesq import pesq
+from scipy.io import wavfile
 from pystoi import stoi
 
 
 def getSeparationMetrics(audio1, audio2, audio1_gt, audio2_gt):
-    reference_sources = np.concatenate((np.expand_dims(audio1_gt, axis=0), np.expand_dims(audio2_gt, axis=0)), axis=0)
-    estimated_sources = np.concatenate((np.expand_dims(audio1, axis=0), np.expand_dims(audio2, axis=0)), axis=0)
+    duration = int(2.55 *16000)
+    print(duration)
+    print(len(audio1))
+    print(len(audio1_gt))
+    reference_sources = np.concatenate((np.expand_dims(audio1_gt[:duration], axis=0), np.expand_dims(audio2_gt[:duration], axis=0)), axis=0)
+    estimated_sources = np.concatenate((np.expand_dims(audio1[:duration], axis=0), np.expand_dims(audio2[:duration], axis=0)), axis=0)
     (sdr, sir, sar, perm) = mir_eval.separation.bss_eval_sources(reference_sources, estimated_sources, False)
     return np.mean(sdr), np.mean(sir), np.mean(sar)
 
@@ -46,10 +50,10 @@ def process_folder(results_dir, audio_sampling_rate):
     print(f'the audio1_path is: {audio1_path}')
     print(f'the audio2_path is: {audio2_path}')
 
-    audio1, _ = librosa.load(audio1_path, sr=audio_sampling_rate)
-    audio2, _ = librosa.load(audio2_path, sr=audio_sampling_rate)
-    audio1_gt, _ = librosa.load(audio1_gt_path, sr=audio_sampling_rate)
-    audio2_gt, _ = librosa.load(audio2_gt_path, sr=audio_sampling_rate)
+    _, audio1 = wavfile.read(audio1_path)
+    _, audio2 = wavfile.read(audio2_path)
+    _, audio1_gt = wavfile.read(audio1_gt_path)
+    _, audio2_gt = wavfile.read(audio2_gt_path)
 
     sdr, sir, sar = getSeparationMetrics(audio1, audio2, audio1_gt, audio2_gt)
     print(f'sdr: {sdr}\n'
@@ -83,11 +87,17 @@ def main():
     # DataFrame to store all results
     results_df = pd.DataFrame(columns=['Folder', 'SDR', 'SIR', 'SAR', 'PESQ', 'STOI'])
     test_dirs = os.listdir(args.test_dir)
-    test_dirs.remove('0000000__Evaluation')
+    if '0000000__Evaluation' in test_dirs:
+        test_dirs.remove('0000000__Evaluation')
 
     # Loop over folders in the test directory
-    for folder_name in test_dirs[:1000]:
+    print(test_dirs)
+
+    for folder_name in test_dirs:
         folder_path = os.path.join(args.test_dir, folder_name)
+        folder_path = Path(folder_path)
+        print(folder_path)
+
         if os.path.isdir(folder_path):
             print('Processing folder:', folder_name)
             sdr, sir, sar, pesq_score, stoi_score = process_folder(folder_path, args.audio_sampling_rate)
@@ -108,6 +118,7 @@ def main():
 
     # Save to Excel
     excel_path = os.path.join(args.test_dir, '0000000__Evaluation/evaluation_results.xlsx')
+    #excel_path = os.path.join('0000000__Evaluation/evaluation_results.xlsx')
     results_df.to_excel(excel_path, index=False)
     print(f"Results saved to {excel_path}")
 

@@ -1,22 +1,20 @@
 import subprocess
 import random
 import os
-from pprint import pprint
 from pathlib import Path
-
-# Base paths
-base_dir = "E:/AV-speech-separation/data/VoxCeleb2"
-#audio_base_path = Path(os.path.join(base_dir, 'raw_audio_test'))
-#video_base_path = Path(os.path.join(base_dir, 'mp4'))
-#mouthroi_base_path = Path(os.path.join(base_dir, 'mouth_roi/unseen_unheard'))
-output_dir_root = Path(os.path.join(base_dir, 'results'))
+#Define the data paths
+base_dir ="../../data/test/"
+output_dir_root = "../../data/test/results/original/complex/"
 
 # Function to select random files
 def select_random_files_original(base_dir, n_pairs=1):
     # Define paths to the main categories
-    mouth_roi_base = 'E:/AV-speech-separation/data/VoxCeleb2/mouth_roi/unseen_unheard'
-    audio_base = 'E:/AV-speech-separation/data/VoxCeleb2/raw_audio_test'
-    video_base = 'E:/AV-speech-separation/data/VoxCeleb2/mp4'
+    #mouth_roi_base = 'E:/AV-speech-separation/data/VoxCeleb2/mouth_roi/unseen_unheard'
+    #audio_base = 'E:/AV-speech-separation/data/VoxCeleb2/raw_audio_test'
+    #video_base = 'E:/AV-speech-separation/data/VoxCeleb2/mp4'
+    mouth_roi_base = '../../data/test/mouth_roi'
+    audio_base = '../../data/test/raw_audio'
+    video_base = '../../data/test/mp4'
 
     # Check if the directory exists
     if not os.path.exists(mouth_roi_base):
@@ -139,7 +137,8 @@ def generate_commands(selections):
             continue
 
         command = (
-            f"python test_visualvoice.py --audio1_path {audio1_path} "
+            f"python test_visualvoic"
+            f".py --audio1_path {audio1_path} "
             f"--audio2_path {audio2_path} "
             f"--mouthroi1_path {mouthroi1_path} "
             f"--mouthroi2_path {mouthroi2_path} "
@@ -172,7 +171,7 @@ def generate_commands(selections):
 # Main execution
 if __name__ == "__main__":
     # Select random files and generate pairs
-    selections = select_random_files_original(base_dir, n_pairs=1000)
+    selections = select_random_files_original(base_dir, n_pairs=2)
     from pprint import pprint
     print(len(selections))
 
