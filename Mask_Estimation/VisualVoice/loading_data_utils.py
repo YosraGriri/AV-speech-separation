@@ -61,6 +61,7 @@ def get_separated_audio(outputs, batch_data, opt, wav=False):
        """
     # fetch data and predictions
     spec_mix = batch_data['audio_spec_mix1']
+    print(f'spec_mix shape is: {spec_mix.shape}')
 
     if opt.mask_to_use == 'pred':
         mask_prediction_1 = outputs['mask_predictions_A1']
@@ -94,16 +95,16 @@ def get_separated_audio(outputs, batch_data, opt, wav=False):
 
     pred_masks_1 = mask_prediction_1.detach().cpu().numpy()
     pred_masks_2 = mask_prediction_2.detach().cpu().numpy()
-
+    print(f'pred_masks_1 shape is: {pred_masks_1.shape}')
     pred_spec_1_real = spec_mix[0, 0, :-1] * pred_masks_1[0, 0] - spec_mix[0, 1, :-1] * pred_masks_1[0, 1]
     pred_spec_1_imag = spec_mix[0, 1, :-1] * pred_masks_1[0, 0] + spec_mix[0, 0, :-1] * pred_masks_1[0, 1]
     pred_spec_2_real = spec_mix[0, 0, :-1] * pred_masks_2[0, 0] - spec_mix[0, 1, :-1] * pred_masks_2[0, 1]
     pred_spec_2_imag = spec_mix[0, 1, :-1] * pred_masks_2[0, 0] + spec_mix[0, 0, :-1] * pred_masks_2[0, 1]
     pred_spec_1_real = np.concatenate((pred_spec_1_real, spec_mix[0, 0, -1:, :]), axis=0)
-    np.save('model_results/spectrograms/pred_spec_1_real.npy', pred_spec_1_real)
+    np.save('model_results/spectrograms/spec_mix.npy', spec_mix)
     pred_spec_1_imag = np.concatenate((pred_spec_1_imag, spec_mix[0, 1, -1:, :]), axis=0)
     pred_spec_2_real = np.concatenate((pred_spec_2_real, spec_mix[0, 0, -1:, :]), axis=0)
-    np.save('model_results/spectrograms/pred_spec_2_real.npy', pred_spec_2_real)
+    #np.save('model_results/spectrograms/pred_spec_2_real.npy', pred_spec_2_real)
     pred_spec_2_imag = np.concatenate((pred_spec_2_imag, spec_mix[0, 1, -1:, :]), axis=0)
     # Compute the complex spectrograms from the real and imaginary parts
     pred_spec_1_complex = pred_spec_1_real + 1j * pred_spec_1_imag
@@ -253,6 +254,8 @@ class AudioProcessor:
         self.sep_audio2 = np.zeros((self.audio_length))
         self.overlap_count = np.zeros((self.audio_length))
         self.masks = []  # Initialize an empty list to store masks
+        self.masks1 = []  # Initialize an empty list to store masks for audio1
+        self.masks2 = []
 
     def process_audio_segment(self, start, end):
         segment1_audio = self.audio1[start:end]
@@ -311,6 +314,7 @@ class AudioProcessor:
         self.sep_audio1[start:end] += reconstructed_signal_1
         self.sep_audio2[start:end] += reconstructed_signal_2
         self.overlap_count[start:end] += 1
+
         return mask1_np, mask2_np, audio_mix_spec, spec_1, spec_2
 
     def process_final_segment(self):
@@ -419,6 +423,8 @@ class AudioProcessor:
         output_audio_mixed_path = os.path.join(output_dir, f"{audio1_basename}_and_{audio2_basename}_mixed.wav")
         output_audio1_separated_path = os.path.join(output_dir, f"{audio1_basename}_separated.wav")
         output_audio2_separated_path = os.path.join(output_dir, f"{audio2_basename}_separated.wav")
+        output_mask1_path = os.path.join(output_dir, f"{audio1_basename}_mask.npy")
+        output_mask2_path = os.path.join(output_dir, f"{audio2_basename}_mask.npy")
 
         # Save the original and processed audio files
         sf.write(output_audio1_path, self.audio1, self.opt.audio_sampling_rate)
@@ -434,6 +440,9 @@ class AudioProcessor:
         # Save the separated audio files
         sf.write(output_audio1_separated_path, avged_sep_audio1, self.opt.audio_sampling_rate)
         sf.write(output_audio2_separated_path, avged_sep_audio2, self.opt.audio_sampling_rate)
+
+        np.save(output_mask1_path, self.masks1)
+        np.save(output_mask2_path, self.masks2)
 
         print(f'Files saved to {output_dir}')
         return output_dir
