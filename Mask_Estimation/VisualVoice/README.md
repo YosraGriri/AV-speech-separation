@@ -38,13 +38,6 @@ To generate separated audio files using VisualVoice, you can run the following s
 
 ## Data Paths
 
-Before running the scripts, ensure that the following paths are set correctly:
+Before running the scripts, ensure that the data paths are set correctly according to your use:
 
-```python
-# Define the data paths
-base_dir = "../../data/test/"
-output_dir_root = "../../data/test/results/original/complex/"
-mouth_roi_base = '../../data/test/mouth_roi'
-audio_base = '../../data/test/raw_audio'
-video_base = '../../data/test/mp4'
 
