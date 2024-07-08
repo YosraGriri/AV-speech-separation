@@ -6,10 +6,9 @@ This README file provides an overview of the Audio-Visual Speech Source Separati
 
 - [Description](#description)
 - [Project Structure](#project-structure)
-- [Requirements](#requirements)
 - [Installation](#installation)
-- [Usage](#usage)
-- [TBA](#tba)
+- [Usage](#Usage)
+
 
 ## Description
 
@@ -25,9 +24,9 @@ The project is organized into the following directories and files:
 - `Beamformer/`: Contains the implementation of the GEV Beamformer.
 - `Evaluation/`: Source code for the audio-visual speech source separation system.
 
-Each of these folders contains a README file with further explanations on how they can be used. The directories should be used in the order listed: first Multi-channel simulation, then mask estimation, and finally the Beamformer.
+Each of these folders contains a README file with further explanations on how they can be used. 
 
-## Requirements
+## installation
 
 1. Clone this repository to your local machine:
 
@@ -38,3 +37,7 @@ Each of these folders contains a README file with further explanations on how th
 ```bash
 pip install -r requirements.txt
 ```
+
+## Usage
+The directories should be used in the order listed: first Multi-channel simulation, then mask estimation, and finally the Beamformer.
+
