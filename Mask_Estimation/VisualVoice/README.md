@@ -6,7 +6,7 @@ This repository contains scripts for using the pre-trained VisualVoice model to 
 
 Before using the scripts, ensure you have completed the following steps:
 
-1. Download the pre-trained models from the [VisualVoice GitHub repository](https://github.com/facebookresearch/VisualVoice) and place them in the `pretrained_models` folder.
+1. Download the pre-trained models from the [VisualVoice GitHub repository](https://github.com/facebookresearch/VisualVoice) and place them in the `pre-trained model` folder.
 2. Install the required libraries from the main folder of this repository:
 
     ```bash
@@ -18,9 +18,11 @@ Before using the scripts, ensure you have completed the following steps:
 
 Before running the code, download the VoxCeleb2 dataset. You can request the download link by using your university email to contact [here](https://mm.kaist.ac.kr/datasets/voxceleb).
 
+The pre-processed mouth ROIs can be downloaded from the [VisualVoice GitHub repository](https://github.com/facebookresearch/VisualVoice).
+
 ## Usage
 
-To separate audio using VisualVoice, you can run the following scripts:
+To generate separated audio files using VisualVoice, you can run the following scripts:
 
 1. Using simulated RIR:
 
@@ -33,10 +35,16 @@ To separate audio using VisualVoice, you can run the following scripts:
     ```bash
     python generate_test_commands.py
     ```
-These Scripts will save a separated audio for each microphone along with the prediced cIRM.
 
-## Acknowledgement
+## Data Paths
 
-The files in the `configs/models/utils/data/options` directories were downloaded from the VisualVoice GitHub repository. Some files have been slightly modified to suit the thesis requirements.
+Before running the scripts, ensure that the following paths are set correctly:
 
-The mask estimation in this thesis uses the pre-trained VisualVoice model. 
+```python
+# Define the data paths
+base_dir = "../../data/test/"
+output_dir_root = "../../data/test/results/original/complex/"
+mouth_roi_base = '../../data/test/mouth_roi'
+audio_base = '../../data/test/raw_audio'
+video_base = '../../data/test/mp4'
+
