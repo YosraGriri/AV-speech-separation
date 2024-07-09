@@ -21,8 +21,8 @@ This script processes audio files using GEV beamforming.
     ```bash
     python GEV_Beamformer.py
     ```
-
-### GEV_Beamformer_ideal.py
+his will process the audio files in the specified directory and save the results to an Excel file.
+### GEV_Beamformer_librosa.py
 
 This script processes audio files using an invertible Matrix A:
     ```python
@@ -34,7 +34,7 @@ This script processes audio files using an invertible Matrix A:
     ```bash
     python GEV_Beamformer_ideal.py
     ```
-
+his will process the audio files in the specified directory and save the results to an Excel file.
 ### Functions in beamform_it.py
 
 - `blind_analytic_normalization(vector, noise_psd_matrix, eps=1e-16)`: Reduces distortions in the beamformed output.
