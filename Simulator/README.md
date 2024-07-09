@@ -16,6 +16,7 @@ pip install -r ../requirements.txt
 python main.py --output_path <output_path> --source_dir <source_dir> [other arguments]
 for example, to run this on the samples published in the ../data/test folder:
 ```bash
+cd Scripts
 python Scripts/main.py --source_dir  "../../data/test/raw_audio"    --output_path  "../../data/test/simulated/"
 ```
 To modify and specify specific room parameters, this can be done either by adding them as arguments to the previous bash command or simply editing the default parameters of the room dimension, mic position, and source position.
