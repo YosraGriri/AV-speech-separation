@@ -99,7 +99,7 @@ def main():
     """
     
     Main function to process all folders in a specified test directory and save the evaluation results to an Excel file.
-    You can either loop over the whole folder by selecting i=0 and j cna be ignored test_dirs[i:j]
+    You can either loop over the whole folder or selecting i=0 and j and loop over test_dirs[i:j]
     Looping over the whole folder at the same time made my laptop freeze, I had to split the process
     
     """

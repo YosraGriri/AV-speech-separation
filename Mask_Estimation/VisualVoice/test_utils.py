@@ -11,16 +11,35 @@ from models.audioVisual_model import AudioVisualModel
 from data.audioVisual_dataset import (generate_spectrogram_complex, load_mouthroi, get_preprocessing_pipelines,
                                       load_frame)
 from utils import utils
-from utils.lipreading_preprocess import *
-from shutil import copy
+
 from facenet_pytorch import MTCNN
 
 def audio_normalize(samples, desired_rms=0.1, eps=1e-4):
+    """
+    Normalize audio samples to a desired RMS level.
+
+    Args:
+        samples (np.ndarray): Audio samples to be normalized.
+        desired_rms (float): Desired RMS level. Default is 0.1.
+        eps (float): Small value to avoid division by zero. Default is 1e-4.
+
+    Returns:
+        Tuple[float, np.ndarray]: Normalization factor and normalized audio samples.
+    """
     rms = np.maximum(eps, np.sqrt(np.mean(samples ** 2)))
     samples = samples * (desired_rms / rms)
     return rms / desired_rms, samples
 
 def clip_audio(audio):
+    """
+    Clip audio samples to the range [-1, 1].
+
+    Args:
+        audio (np.ndarray): Audio samples to be clipped.
+
+    Returns:
+        np.ndarray: Clipped audio samples.
+    """
     audio[audio > 1.] = 1.
     audio[audio < -1.] = -1.
     return audio
@@ -107,13 +126,19 @@ def get_separated_audio(outputs, batch_data, opt,
                                                           length=int(opt.audio_length * opt.audio_sampling_rate))
     # Preparing masks as NumPy arrays for return
     output_masks_np = (pred_masks_1, pred_masks_2)
-    print('Youhouhou')
     print(f'The mask shape is: {pred_masks_1}')
     return preds_wav_1, preds_wav_2, output_masks_np[0], output_masks_np[1]
 
-
-
 def initialize_models_and_utilities(opt):
+    """
+    Initialize models and utilities for audio-visual processing.
+
+    Args:
+        opt (argparse.Namespace): Options and configurations.
+
+    Returns:
+        Tuple[AudioVisualModel, MTCNN, Callable, torchvision.transforms.Compose]: Initialized models and utilities.
+    """
     builder = ModelBuilder()
 
     # Initialize models
@@ -168,6 +193,17 @@ def initialize_models_and_utilities(opt):
     return model, mtcnn, lipreading_preprocessing_func, vision_transform
 
 def load_and_preprocess_data(opt, mtcnn, vision_transform):
+    """
+    Load and preprocess audio and visual data for separation.
+
+    Args:
+        opt (argparse.Namespace): Options and configurations.
+        mtcnn (MTCNN): Face detection model.
+        vision_transform (torchvision.transforms.Compose): Transformations for visual data.
+
+    Returns:
+        Tuple: Processed audio, video frames, and mouth ROI data.
+    """
     # Audio loading and normalization
     _, audio1 = wavfile.read(opt.audio1_path)
     _, audio2 = wavfile.read(opt.audio2_path)
@@ -230,6 +266,17 @@ class AudioProcessor:
         self.spectrogram_mix = []
 
     def process_audio_segment(self, start, end):
+        """
+        Process a segment of audio for separation.
+
+        Args:
+            start (int): Start index of the audio segment.
+            end (int): End index of the audio segment.
+
+        Returns:
+            Tuple[np.ndarray, np.ndarray, np.ndarray]:
+            Masks for the audio segment and the mixed audio spectrogram.
+        """
         segment1_audio = self.audio1[start:end]
         segment2_audio = self.audio2[start:end]
 
@@ -248,7 +295,6 @@ class AudioProcessor:
         frame_index_start = int(round(start / self.opt.audio_sampling_rate * 25))
         segment1_mouthroi = self.mouthroi_1[frame_index_start:(frame_index_start + self.opt.num_frames), :, :]
         segment2_mouthroi = self.mouthroi_2[frame_index_start:(frame_index_start + self.opt.num_frames), :, :]
-
         segment1_mouthroi = self.lipreading_preprocessing_func(segment1_mouthroi)
         segment2_mouthroi = self.lipreading_preprocessing_func(segment2_mouthroi)
 
@@ -278,7 +324,6 @@ class AudioProcessor:
         reconstructed_signal_1, reconstructed_signal_2, mask1_np, mask2_np = get_separated_audio(outputs, data, self.opt, wav=False)
         reconstructed_signal_1 = reconstructed_signal_1 * normalizer1
         reconstructed_signal_2 = reconstructed_signal_2 * normalizer2
-
         self.sep_audio1[start:end] += reconstructed_signal_1
         self.sep_audio2[start:end] += reconstructed_signal_2
         self.overlap_count[start:end] += 1
@@ -289,6 +334,15 @@ class AudioProcessor:
 
 
     def save_results(self, opt):
+        """
+        Save the results of audio processing to files.
+
+        Args:
+            opt (argparse.Namespace): Options and configurations for saving results.
+
+        Returns:
+            Tuple[str, str, str, str]: Paths to the output directory, mask files, and mixed spectrogram file.
+        """
         # Extract video names from the path to use in the output directory name
         # Split paths using the os.path.sep which will be '\\' on Windows and '/' on Unix
         parts1 = opt.video1_path.split(os.path.sep)

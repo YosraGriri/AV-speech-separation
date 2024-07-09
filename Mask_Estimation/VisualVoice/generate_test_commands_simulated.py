@@ -5,8 +5,8 @@ from pprint import pprint
 from pathlib import Path
 
 # Base paths
-base_dir = "E:/AV-speech-separation/data/VoxCeleb2/"
-output_dir_root = "E:/AV-speech-separation/data/VoxCeleb2/results/simulated/complex"
+#base_dir = "E:/AV-speech-separation/data/VoxCeleb2/"
+#output_dir_root = "E:/AV-speech-separation/data/VoxCeleb2/results/simulated/complex"
 #Define the data paths
 base_dir ="../../data/test/simulated"
 output_dir_root = "../../data/test/results/simulated/complex/"
