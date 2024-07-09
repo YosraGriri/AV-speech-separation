@@ -6,9 +6,9 @@ This project implements Generalized Eigenvalue (GEV) beamforming
 
 - `GEV_Beamformer.py`: Main script for processing audio files using GEV beamforming on the magnitude of the predicted Masks from VisualVoice.
 - `GEV_Beamformer_ideal.py`: Script for ideal beamforming scenarios.
-- `beamform_it.py`: Contains functions for beamforming operations.
-- `signal_processing.py`: Utility functions for signal processing.
-- `utils.py`: Helper functions for loading and evaluating audio files.
+- `Utils/beamform_it.py`: Contains functions for beamforming operations.
+- `Utils/signal_processing.py`: Utility functions for signal processing.
+- `Utils/utils.py`: Helper functions for loading and evaluating audio files.
 
 ## Usage
 
