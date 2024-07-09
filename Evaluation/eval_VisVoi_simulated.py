@@ -30,7 +30,7 @@ def getSeparationMetrics(audio1, audio2, audio1_gt, audio2_gt):
     (sdr, sir, sar, perm) = mir_eval.separation.bss_eval_sources(reference_sources, estimated_sources, False)
     return np.mean(sdr), np.mean(sir), np.mean(sar)
 
-def process_folder(results_dir, audio_sampling_rate):
+def process_folder(results_dir, audio_sampling_rate, mic_index=0):
     """
     Process a folder containing separated and ground truth audio files to compute evaluation metrics.
     Args:
@@ -41,7 +41,7 @@ def process_folder(results_dir, audio_sampling_rate):
         
     """
     # Find the wav files in the directory
-    wav_files = [f for f in os.listdir(results_dir) if f.endswith('.wav')]
+    wav_files = [f for f in os.listdir(results_dir) if f.endswith('.wav') and f'mic{mic_index}' in f]
 
     print(f'The results_dir is: {results_dir}')
 
@@ -59,7 +59,6 @@ def process_folder(results_dir, audio_sampling_rate):
 
     # Assume naming convention: 001.wav -> 001_separated.wav
     audio1_gt_path = Path(os.path.join(results_dir, ground_truth_files[0]))
-    #print()
     audio2_gt_path = Path(os.path.join(results_dir, ground_truth_files[1]))
     audio1_path = Path(os.path.join(results_dir, separated_files[0]))
     audio2_path = Path(os.path.join(results_dir, separated_files[1]))
@@ -97,31 +96,29 @@ def process_folder(results_dir, audio_sampling_rate):
 
 def main():
     """
-    
     Main function to process all folders in a specified test directory and save the evaluation results to an Excel file.
-    You can either loop over the whole folder by selecting i=0 and j cna be ignored test_dirs[i:j]
-    Looping over the whole folder at the same time made my laptop freeze, I had to split the process
     
+    You can either loop over the whole folder by selecting i=0 and j can be ignored test_dirs[i:j].
+    Looping over the whole folder at the same time made my laptop freeze, so I had to split the process.
+    You must also specify which mic separately.
     """
-    test_dir = "E:/AV-speech-separation/data/VoxCeleb2/results/original/no_phase/"
-    test_dir = "C:/Users/yosra/Documents/AV-speech-separation/data/test/results/original/complex"
+    
+    test_dir = "E:/AV-speech-separation/data/VoxCeleb2/results/simulated/"
     audio_sampling_rate = 16000
     mic_index = 0
 
     # DataFrame to store all results
     results_df = pd.DataFrame(columns=['Folder', 'SDR', 'SIR', 'SAR', 'PESQ', 'STOI'])
     test_dirs = os.listdir(test_dir)
-    i=0
-    j=4
-    
+    test_dirs.remove('0000000__Evaluation')
 
     # Loop over folders in the test directory
-    for folder_name in test_dirs[i:j]:
+    for folder_name in test_dirs:
         folder_path = os.path.join(test_dir, folder_name)
         print(folder_path)
         if os.path.isdir(folder_path):
             print('Processing folder:', folder_name)
-            result = process_folder(folder_path, audio_sampling_rate)
+            result = process_folder(folder_path, audio_sampling_rate, mic_index)
             if result is None:
                 continue
             sdr, sir, sar, pesq_score, stoi_score = result
@@ -139,11 +136,9 @@ def main():
     averages['Folder'] = 'Average'
     averages_df = pd.DataFrame([averages])
     results_df = pd.concat([results_df, averages_df], ignore_index=True)
-    print(test_dir)
 
     # Save to Excel
-    excel_path = os.path.join(test_dir, f'evaluation_results_no_phase_{i}_{j}.xlsx')
-    print(excel_path)
+    excel_path = os.path.join(test_dir, f'0000000__Evaluation/evaluation_results_microphone_{mic_index}.xlsx')
     results_df.to_excel(excel_path, index=False)
     print(f"Results saved to {excel_path}")
 
