@@ -10,6 +10,7 @@ from pathlib import Path
 #Define the data paths
 base_dir ="../../data/test/simulated"
 output_dir_root = "../../data/test/results/simulated/complex/"
+output_dir_root = "../../data/test/results/simulated/no_phase/"
 
 # Function to select random files
 def select_random_files_original(base_dir, n_pairs=1, n_mics=3):

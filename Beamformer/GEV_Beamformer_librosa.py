@@ -22,7 +22,7 @@ n_fft = 512
 
 
 target_path ="../data/test/results/original/complex/id04030_7mXUMuo5_NE_00002VSid06913_Y60BPD7Ao1U_00089/00002.wav"
-noise_path = "../data/test/results/original/complex/noise.wav"
+noise_path = "../data/test/results/original/GEV Oracle/noise.wav"
 noise_speech_path ="../data/test/results/original/complex/id04030_7mXUMuo5_NE_00002VSid06913_Y60BPD7Ao1U_00089/00089.wav"
 
 target_mask = np.load("../data/test/results/original/complex/id04030_7mXUMuo5_NE_00002VSid06913_Y60BPD7Ao1U_00089/00002_mask.npy")

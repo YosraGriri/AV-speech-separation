@@ -17,7 +17,7 @@ output_excel = "beamforming_results.xlsx"
 # Prepare a list to store results
 results = []
 i = 0
-j = 1
+j = 2
 
 # Paths and configurations
 results_path = "../data/test/results/simulated/complex"
@@ -31,6 +31,9 @@ output_excel = os.path.join(results_path, f"beamforming_simulated_results_NrOfMi
 # Loop over each combination directory
 for combination_id in os.listdir(root_dir)[i:j]: 
     base_path = os.path.join(root_dir, combination_id)
+    # Check if the file is an Excel file
+    if os.path.splitext(base_path)[1] in ['.xlsx', '.xls']:
+        continue
     print(f"Processing {base_path}")
     
     if not os.path.isdir(base_path):
@@ -127,8 +130,8 @@ if results:
     columns.extend(['Max_SDR', 'Max_SIR', 'Max_SAR', 'Max_PESQ', 'Max_Stoi'])
 
     # Save results to Excel
-    df_results = pd.DataFrame(results, columns=columns)
-    df_results.to_excel(output_excel, index=False)
+   # df_results = pd.DataFrame(results, columns=columns)
+   # df_results.to_excel(output_excel, index=False)
     print(f"Results saved to {output_excel}")
 else:
     print("No results to save.")

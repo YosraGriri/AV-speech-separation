@@ -103,17 +103,19 @@ def main():
     You must also specify which mic separately.
     """
     
-    test_dir = "E:/AV-speech-separation/data/VoxCeleb2/results/simulated/"
+    test_dir = "C:/Users/yosra/Documents/AV-speech-separation/data/test/results/simulated/no_phase"
     audio_sampling_rate = 16000
     mic_index = 0
+    i=0
+    j=4
 
     # DataFrame to store all results
     results_df = pd.DataFrame(columns=['Folder', 'SDR', 'SIR', 'SAR', 'PESQ', 'STOI'])
     test_dirs = os.listdir(test_dir)
-    test_dirs.remove('0000000__Evaluation')
+    #test_dirs.remove('0000000__Evaluation')
 
     # Loop over folders in the test directory
-    for folder_name in test_dirs:
+    for folder_name in test_dirs[i:j]:
         folder_path = os.path.join(test_dir, folder_name)
         print(folder_path)
         if os.path.isdir(folder_path):
@@ -138,7 +140,7 @@ def main():
     results_df = pd.concat([results_df, averages_df], ignore_index=True)
 
     # Save to Excel
-    excel_path = os.path.join(test_dir, f'0000000__Evaluation/evaluation_results_microphone_{mic_index}.xlsx')
+    excel_path = os.path.join(test_dir, f'evaluation_results_no_phase_{i}_{j}.xlsx')
     results_df.to_excel(excel_path, index=False)
     print(f"Results saved to {excel_path}")
 

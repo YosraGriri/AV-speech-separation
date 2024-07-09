@@ -5,11 +5,12 @@ from pathlib import Path
 
 # Define the data paths
 base_dir = "../../data/test/"
+#output_dir_root = "../../data/test/results/original/no_phase/"
 output_dir_root = "../../data/test/results/original/complex/"
 
 
 # Function to select random files
-def select_random_files_original(base_dir, n_pairs=1):
+def select_random_files_original(base_dir, n_pairs=2):
     """
     Select random files from the given base directory.
 
