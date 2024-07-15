@@ -1,4 +1,4 @@
-# GEV Beamforming Project
+# GEV Beamforming
 
 This project implements Generalized Eigenvalue (GEV) beamforming
 
@@ -32,7 +32,7 @@ This script processes audio files using an invertible Matrix A:
 1. Set the target, noise, and noisy speech file paths in the script.
 2. Run the script:
     ```bash
-    python GEV_Beamformer_ideal.py
+    python GEV_Beamformer_librosa.py
     ```
 This will process the audio files in the specified directory and save the results Metrics to an Excel file.
 

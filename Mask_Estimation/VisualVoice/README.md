@@ -6,7 +6,7 @@ This repository contains scripts for using the pre-trained VisualVoice model to 
 
 Before using the scripts, ensure you have completed the following steps:
 
-1. Download the pre-trained models from the [VisualVoice GitHub repository](https://github.com/facebookresearch/VisualVoice) and place them in the `pre-trained model` folder.
+1. Download the pre-trained models from the [VisualVoice GitHub repository](https://github.com/facebookresearch/VisualVoice) and place them in the `pretrained_models` folder.
 2. Install the required libraries from the main folder of this repository:
 
     ```bash

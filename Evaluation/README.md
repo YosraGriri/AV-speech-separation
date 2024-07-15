@@ -12,7 +12,7 @@ This repository contains scripts for evaluating audio separation quality using v
 
 This script evaluates the separation quality of audio files in a specified directory.
 
-1. Set the `test_dir` variable in the `main()` function to the path of your directory containing the audio files.
+1. Set the `test_dir` variable in the `main()` function to the path of the directory containing the audio files.
 2. Run the script:
 
 ```bash
@@ -23,7 +23,7 @@ python eval_VisVoi_original.py
 
 This script evaluates the separation quality of audio files in a specified directory.
 
-1. Set the `test_dir` variable in the `main()` function to the path of your directory containing the audio files.
+1. Set the `test_dir` variable in the `main()` function to the path of the directory containing the audio files.
 2. Run the script:
 
 ```bash
