@@ -38,6 +38,8 @@ To generate separated audio files using VisualVoice, you can run the following s
 
 The separated audio files and masks will be saved in the `../../data/test/results/original/complex/` directory for now or any other directory of your choice. 
 
+## Acknowledgements
+Some of the code is borrowed or adapted from the VisualVoice repository: [VisualVoice]https://github.com/facebookresearch/VisualVoice
 
 
 
