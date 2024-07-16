@@ -62,6 +62,6 @@ pip install -r requirements.txt
 ## Usage
 The directories should be used in the order listed: first Multi-channel simulation, then mask estimation, and finally the Beamformer.
 
-**Note:** The code is solely written by me as part of my master's thesis, and no one is allowed to edit or publish it without citing this repository. Any public code used and information built upon in this project is properly cited.
+**Note:** This repo is part of my master's thesis, and no one other than me is allowed to edit it. 
 
 
